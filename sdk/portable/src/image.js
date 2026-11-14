@@ -127,10 +127,18 @@ function diskpart(script) {
   }
 }
 
+function mountDir(dir) {
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+  } catch (e) {
+    if (!fs.lstatSync(dir, { throwIfNoEntry: false })) throw e;
+  }
+}
+
 function windows(h, size) {
   const image = path.join(h, "acfs.vhdx");
   const mount = path.join(h, "mnt");
-  fs.mkdirSync(mount, { recursive: true });
+  mountDir(mount);
   const prev = readState(h);
   if (prev?.kind === "ntfs-image" && fs.existsSync(path.join(mount, ".acfs-lite-volume"))) return prev;
   const mb = Math.ceil(bytes(size) / (1 << 20));
@@ -146,7 +154,11 @@ function windows(h, size) {
     fs.writeFileSync(path.join(mount, ".acfs-lite-volume"), "");
   } else {
     diskpart([`select vdisk file="${image}"`, "attach vdisk"]);
-    if (!fs.existsSync(path.join(mount, ".acfs-lite-volume"))) diskpart([`select vdisk file="${image}"`, "select partition 1", `assign mount="${mount}"`]);
+    if (!fs.existsSync(path.join(mount, ".acfs-lite-volume"))) {
+      fs.rmSync(mount, { recursive: false, force: true });
+      fs.mkdirSync(mount, { recursive: true });
+      diskpart([`select vdisk file="${image}"`, "select partition 1", `assign mount="${mount}"`]);
+    }
   }
   return saveState(h, { kind: "ntfs-image", image, mount, root: mount });
 }
