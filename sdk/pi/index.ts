@@ -1,9 +1,10 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 
-import { Client, type PathName, type ProcInfo } from "../typescript/src/index.ts";
+import { type Backend, open } from "../portable/index.js";
 
 const READ_ONLY = new Set(["read", "grep", "find", "ls"]);
 const CHECKPOINT = "acfs-checkpoint";
+const AUTHOR = "pi";
 
 interface CheckpointData {
   proc: string;
@@ -14,16 +15,33 @@ interface CheckpointData {
 }
 
 export default function (pi: ExtensionAPI) {
-  const acfs = new Client();
-  const proc = process.env.ACFS_PROC;
+  const acfs = open({ cwd: process.cwd() });
   let before: string | undefined;
   let asked = false;
+
+  pi.registerCommand("acfs", {
+    description: "acfs: status | log | diff | undo | merge",
+    handler: async (args, ctx) => {
+      if (!acfs) {
+        ctx.ui.notify(
+          "acfs: not active here. Start pi under `acfs run` (Linux, acfsd) or in a tree of an acfs-lite store (`acfs-lite register <ws> <dir>`, then cd to the printed path).",
+          "warning",
+        );
+        return;
+      }
+      await guard(ctx, () => command(acfs, args.trim().split(/\s+/).filter(Boolean)[0] ?? "status", ctx));
+    },
+  });
+
+  if (!acfs) return;
+  const backend: Backend = acfs;
+  const key = acfs.kind === "acfsd" ? acfs.proc : `${acfs.ws}/${acfs.tree}`;
 
   const branch = (ctx: ExtensionContext, leaf?: string | null) => (leaf === null ? [] : ctx.sessionManager.getBranch(leaf ?? undefined));
 
   function checkpoints(entries: ReturnType<typeof branch>): CheckpointData[] {
     return entries.flatMap((e) =>
-      e.type === "custom" && e.customType === CHECKPOINT && (e.data as CheckpointData)?.proc === proc ? [e.data as CheckpointData] : [],
+      e.type === "custom" && e.customType === CHECKPOINT && (e.data as CheckpointData)?.proc === key ? [e.data as CheckpointData] : [],
     );
   }
 
@@ -39,25 +57,21 @@ export default function (pi: ExtensionAPI) {
     }
   }
 
-  const changeset = async (message: string, tool_call?: string, since?: string) =>
-    (await acfs.call("proc.changeset", { proc_id: proc!, author: "pi", message, ...(tool_call ? { tool_call } : {}), ...(since ? { since } : {}) }))
-      .changeset ?? undefined;
+  const changeset = (message: string, toolCall?: string, since?: string) => backend.checkpoint(message, { author: AUTHOR, toolCall, since });
 
   async function restore(ctx: ExtensionContext, from: string | null, to: string | null) {
     const target = stateAt(ctx, to);
     if (!target || target === stateAt(ctx, from)) return;
     const mode = process.env.ACFS_PI_RESTORE ?? "ask";
     if (mode === "never" || (mode === "ask" && !(ctx.hasUI && (await ctx.ui.confirm("acfs", "Bring the files back to this point?"))))) return;
-    const r = await acfs.call("reset", { target });
+    const r = await backend.reset(target);
     if (r.conflict) throw new Error(`reset to ${target} conflicts`);
-    pi.appendEntry<CheckpointData>(CHECKPOINT, { proc: proc!, target: (await changeset("after reset", undefined, stateAt(ctx, from))) ?? target });
+    pi.appendEntry<CheckpointData>(CHECKPOINT, { proc: key, target: (await changeset("after reset", undefined, stateAt(ctx, from))) ?? target });
     ctx.ui.notify(`acfs: files back to ${target}`, "info");
   }
 
-  if (!proc) return;
-
   pi.on("session_start", async (e, ctx) => {
-    ctx.ui.setStatus("acfs", `acfs ${proc}`);
+    ctx.ui.setStatus("acfs", backend.describe());
     if (e.reason === "fork") await guard(ctx, () => restore(ctx, null, ctx.sessionManager.getLeafId()));
   });
 
@@ -87,7 +101,7 @@ export default function (pi: ExtensionAPI) {
         before = undefined;
         return;
       }
-      const cp: CheckpointData = { proc: proc!, target, tool_call };
+      const cp: CheckpointData = { proc: key, target, tool_call };
       if (before) cp.from = before;
       before = undefined;
       pi.appendEntry(CHECKPOINT, cp);
@@ -96,9 +110,8 @@ export default function (pi: ExtensionAPI) {
 
   pi.on("agent_settled", async (_e, ctx) => {
     await guard(ctx, async () => {
-      const r = await acfs.call("proc.merge", { proc_id: proc! });
-      const left = r.results.flatMap((m) => (m.conflicts ?? []).map((c) => `${m.ws}: ${pathName(c.path)} (${c.reason})`));
-      if (left.length) ctx.ui.notify(`acfs: not merged yet, conflicts in ${left.join(", ")}`, "warning");
+      const r = await backend.settle({ author: AUTHOR });
+      if (r.conflicts.length) ctx.ui.notify(`acfs: not merged yet, conflicts in ${r.conflicts.join(", ")}`, "warning");
     });
   });
 
@@ -106,44 +119,35 @@ export default function (pi: ExtensionAPI) {
     await guard(ctx, () => restore(ctx, e.oldLeafId, e.newLeafId));
   });
 
-  pi.registerCommand("acfs", {
-    description: "acfs: status | log | diff | undo | merge",
-    handler: async (args, ctx) => {
-      await guard(ctx, async () => {
-        const [cmd = "status"] = args.trim().split(/\s+/).filter(Boolean);
-        if (cmd === "status") {
-          const p: ProcInfo = await acfs.call("proc.show", { proc_id: proc! });
-          const brs = p.branches.map((b) => `${b.ws} (${b.state})`).join(", ");
-          ctx.ui.notify(`acfs: process ${p.id}, ${p.state}; branches ${brs || "none"}`, "info");
-        } else if (cmd === "log") {
-          const log = await acfs.call("log", { proc_id: proc!, n: 20 });
-          ctx.ui.notify(log.map((c) => `${c.id} ${c.author} ${c.message}`).join("\n") || "no changesets", "info");
-        } else if (cmd === "diff") {
-          const first = checkpoints(branch(ctx))[0];
-          const start = first?.from ?? first?.target;
-          if (!start) throw new Error("no changes recorded in this conversation");
-          const d = await acfs.call("diff", { a: start, b: (await changeset("diff")) ?? stateAt(ctx) ?? start });
-          const lines = d.flatMap((r) => r.changes.map((c) => `${r.ws}: ${c.kind} ${pathName(c.path)}`));
-          ctx.ui.notify(lines.join("\n") || "no changes since the conversation started", "info");
-        } else if (cmd === "undo") {
-          const cps = checkpoints(branch(ctx));
-          const undone = new Set(cps.flatMap((c) => (c.undid ? [c.undid] : [])));
-          const last = cps.findLast((c) => c.tool_call && !undone.has(c.target));
-          if (!last) throw new Error("nothing to undo");
-          const r = await acfs.call("revert", last.from ? { from: last.from, to: last.target } : { changeset: last.target });
-          if (r.conflict) throw new Error(`undo of ${last.target} conflicts with later changes`);
-          const now = (await changeset("after undo", undefined, last.target)) ?? last.target;
-          pi.appendEntry<CheckpointData>(CHECKPOINT, { proc: proc!, target: now, undid: last.target });
-          ctx.ui.notify(`acfs: undid ${last.target}`, "info");
-        } else if (cmd === "merge") {
-          const r = await acfs.call("proc.merge", { proc_id: proc! });
-          ctx.ui.notify(`acfs: ${r.state}${r.conflict ? ", conflicts left" : ""}`, r.conflict ? "warning" : "info");
-        } else {
-          throw new Error(`unknown subcommand ${cmd}`);
-        }
-      });
-    },
-  });
+  async function command(b: Backend, cmd: string, ctx: ExtensionContext) {
+    if (cmd === "status") {
+      ctx.ui.notify(await b.status(), "info");
+    } else if (cmd === "log") {
+      const log = await b.log(20);
+      ctx.ui.notify(log.map((c) => `${c.id} ${c.author} ${c.message}`).join("\n") || "no changesets", "info");
+    } else if (cmd === "diff") {
+      const first = checkpoints(branch(ctx))[0];
+      const start = first?.from ?? first?.target;
+      if (!start) throw new Error("no changes recorded in this conversation");
+      const d = await b.diff(start, (await changeset("diff")) ?? stateAt(ctx) ?? start);
+      ctx.ui.notify(d.map((c) => `${c.ws}: ${c.kind} ${c.path}`).join("\n") || "no changes since the conversation started", "info");
+    } else if (cmd === "undo") {
+      const cps = checkpoints(branch(ctx));
+      const undone = new Set(cps.flatMap((c) => (c.undid ? [c.undid] : [])));
+      const last = cps.findLast((c) => c.tool_call && !undone.has(c.target));
+      if (!last) throw new Error("nothing to undo");
+      const r = last.from ? await b.revert(last.from, last.target) : await b.undo(last.target);
+      if (r.conflict) throw new Error(`undo of ${last.target} conflicts with later changes`);
+      const now = (await changeset("after undo", undefined, last.target)) ?? last.target;
+      pi.appendEntry<CheckpointData>(CHECKPOINT, { proc: key, target: now, undid: last.target });
+      ctx.ui.notify(`acfs: undid ${last.target}`, "info");
+    } else if (cmd === "merge") {
+      const r = await b.settle({ author: AUTHOR });
+      ctx.ui.notify(`acfs: ${r.state}${r.conflicts.length ? `, conflicts left: ${r.conflicts.join(", ")}` : ""}`, r.conflicts.length ? "warning" : "info");
+    } else {
+      throw new Error(`unknown subcommand ${cmd}`);
+    }
+  }
 }
 
 function describe(tool: string, input: Record<string, unknown>): string {
@@ -153,8 +157,4 @@ function describe(tool: string, input: Record<string, unknown>): string {
 
 function clip(s: string): string {
   return s.length > 200 ? `${s.slice(0, 197)}...` : s;
-}
-
-function pathName(p: PathName): string {
-  return typeof p === "string" ? p : Buffer.from(p.base64, "base64").toString();
 }
