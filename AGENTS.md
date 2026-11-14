@@ -137,7 +137,7 @@ DSH 没有官方的中央市场: Discover 读用户加的索引 URL (format 1, �
 `market/index.json`, 地址 `https://raw.githubusercontent.com/emmettlu/tracefs/main/market/index.json`. 版本的安装源是 Git (`github.com/emmettlu/tracefs`,
 钉住提交, `path: sdk/dsh`), 不用 npm; 图标内联成 data URI (raw.githubusercontent 给 SVG 的类型是 text/plain, 页面显示不了). 发新版: 改
 `sdk/dsh/package.json` 的 `version`, 提交推送, 再 `node market/gen.mjs <那个提交>` (旧版本保留在 `versions`, `latest` 指新版) 并提交.
-CI 的 dsh-e2e 用 dsh 的解析器校验索引 (`market/validate.ts`), 按它给的安装串装进一个 profile 并加载. 仓库带 GitHub topic `dsh-plugin`.
+CI 的 dsh-e2e 用 dsh 的解析器校验索引 (`market/validate.mts`), 按它给的安装串装进一个 profile 并加载. 仓库带 GitHub topic `dsh-plugin`.
 
 ## 内核态
 

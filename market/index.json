@@ -1,0 +1,71 @@
+{
+  "format": 1,
+  "title": {
+    "en": "tracefs",
+    "zh": "tracefs"
+  },
+  "description": {
+    "en": "DSH bundles from tracefs (tracefs)",
+    "zh": "tracefs (tracefs) 的 DSH 插件"
+  },
+  "metadata": {
+    "categories": {
+      "developer-tools": {
+        "title": {
+          "en": "Developer tools",
+          "zh": "开发工具"
+        }
+      }
+    }
+  },
+  "plugins": [
+    {
+      "name": "dsh-tracefs",
+      "title": {
+        "en": "tracefs",
+        "zh": "tracefs"
+      },
+      "description": {
+        "en": "Records every tool call that writes files as an tracefs changeset, merges the work into main when a turn ends, and gives the model an tracefs tool to list, diff and undo. tracefsd on Linux, or an tracefs-lite copy-on-write store on macOS (APFS image), Linux (btrfs) and Windows (NTFS VHDX).",
+        "zh": "把每次写文件的工具调用记成 tracefs changeset, 回合结束时合进 main, 并给模型一个 tracefs 工具来查看、diff 和撤销. Linux 上用 tracefsd, 或在 macOS (APFS 镜像)、Linux (btrfs)、Windows (NTFS VHDX) 上用 tracefs-lite 写时复制仓库."
+      },
+      "icon": "data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA2NCA2NCI+PHJlY3Qgd2lkdGg9IjY0IiBoZWlnaHQ9IjY0IiByeD0iMTQiIGZpbGw9IiMwZjc2NmUiLz48cGF0aCBkPSJNMzIgMTJ2NDBNMzIgMjJsLTExIDlNMzIgMzBsMTItMTBNMzIgNDBsLTktNyIgc3Ryb2tlPSIjZWNmZGY1IiBzdHJva2Utd2lkdGg9IjQiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgZmlsbD0ibm9uZSIvPjxjaXJjbGUgY3g9IjIxIiBjeT0iMzEiIHI9IjQiIGZpbGw9IiNhN2YzZDAiLz48Y2lyY2xlIGN4PSI0NCIgY3k9IjIwIiByPSI0IiBmaWxsPSIjYTdmM2QwIi8+PC9zdmc+Cg==",
+      "author": "emmettlu",
+      "homepage": "https://github.com/emmettlu/tracefs",
+      "repository": {
+        "url": "https://github.com/emmettlu/tracefs",
+        "directory": "sdk/dsh"
+      },
+      "metadata": {
+        "category": "developer-tools",
+        "keywords": [
+          "dsh",
+          "dsh-plugin",
+          "tracefs",
+          "versioning",
+          "undo",
+          "checkpoint",
+          "copy-on-write"
+        ]
+      },
+      "dist-tags": {
+        "latest": "0.1.0"
+      },
+      "versions": [
+        {
+          "version": "0.1.0",
+          "publishTimestamp": 1794661366,
+          "source": {
+            "type": "git",
+            "url": "https://github.com/emmettlu/tracefs",
+            "commit": "0c6d7117dfe792f037a8b4adf6a39994123396b7",
+            "path": "sdk/dsh"
+          },
+          "engines": {
+            "dsh": ">=0.2.1-alpha.4 <0.3.0"
+          }
+        }
+      ]
+    }
+  ]
+}

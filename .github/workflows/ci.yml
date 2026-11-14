@@ -169,7 +169,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           cd "$RUNNER_TEMP/dsh"
-          node --import tsx "$GITHUB_WORKSPACE/market/validate.ts" "$PWD" "$GITHUB_WORKSPACE/market/index.json" | tee "$RUNNER_TEMP/specs"
+          node --import tsx "$GITHUB_WORKSPACE/market/validate.mts" "$PWD" "$GITHUB_WORKSPACE/market/index.json" | tee "$RUNNER_TEMP/specs"
           spec=$(head -1 "$RUNNER_TEMP/specs" | sed 's/^[^:]*: //')
           DSH_HOME="$RUNNER_TEMP/home" pnpm dsh plugin --profile market add "$spec"
           DSH_HOME="$RUNNER_TEMP/home" pnpm dsh --profile market --dump-config | grep -q '^# == dsh-tracefs'
