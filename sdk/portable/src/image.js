@@ -130,9 +130,16 @@ function diskpart(script) {
 function mountDir(dir) {
   try {
     fs.mkdirSync(dir, { recursive: true });
+    return;
   } catch (e) {
-    if (!fs.lstatSync(dir, { throwIfNoEntry: false })) throw e;
+    if (e.code !== "ENOENT" || !fs.existsSync(path.dirname(dir))) throw e;
   }
+  try {
+    fs.rmdirSync(dir);
+  } catch {
+    spawnSync("cmd", ["/d", "/c", "rmdir", dir], { stdio: "ignore" });
+  }
+  fs.mkdirSync(dir, { recursive: true });
 }
 
 function windows(h, size) {
