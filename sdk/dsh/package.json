@@ -1,0 +1,28 @@
+{
+  "name": "dsh-acfs",
+  "version": "0.1.0",
+  "description": "DeepSeek Harness bundle: acfs changesets for every tool call that writes, undo, and a merge when a turn ends; on acfsd (acfs run) or an acfs-lite store (macOS, Windows, any Linux)",
+  "type": "module",
+  "license": "MIT",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./package.json": "./package.json",
+    "./cordis.patch.yml": "./cordis.patch.yml"
+  },
+  "files": ["index.js", "cordis.patch.yml"],
+  "engines": {
+    "dsh": ">=0.2.1-alpha.4 <0.3.0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "*"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": ["./cordis.patch.yml"]
+    }
+  },
+  "scripts": {
+    "test": "node --test \"test/*.test.js\""
+  }
+}
