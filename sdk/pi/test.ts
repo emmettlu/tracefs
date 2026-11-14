@@ -18,37 +18,37 @@ import {
 
 import { Client } from "../typescript/src/index.ts";
 
-process.env.ACFS_PI_RESTORE = "always";
-const acfs = new Client();
+process.env.TRACEFS_PI_RESTORE = "always";
+const tracefs = new Client();
 const mainText = async (ws: string, path: string) => {
   try {
-    const f = await acfs.call("fs.read", { ws, path });
+    const f = await tracefs.call("fs.read", { ws, path });
     return f.content == null ? undefined : Buffer.from(f.content, "base64").toString();
   } catch {
     return undefined;
   }
 };
 
-if (!process.env.ACFS_PROC) {
-  const dir = mkdtempSync(join(process.env.HOME!, "acfs-pi-test-"));
+if (!process.env.TRACEFS_PROC) {
+  const dir = mkdtempSync(join(process.env.HOME!, "tracefs-pi-test-"));
   const name = `pitest${Date.now()}`;
   writeFileSync(join(dir, "a.txt"), "v0\n");
-  await acfs.call("ws.register", { name, from: dir });
-  const r = spawnSync(process.env.ACFS_BIN ?? "acfs", ["run", "--ws", name, "--", process.execPath, ...process.execArgv, import.meta.filename], {
+  await tracefs.call("ws.register", { name, from: dir });
+  const r = spawnSync(process.env.TRACEFS_BIN ?? "tracefs", ["run", "--ws", name, "--", process.execPath, ...process.execArgv, import.meta.filename], {
     cwd: dir,
     stdio: "inherit",
-    env: { ...process.env, ACFS_PI_TEST_WS: name },
+    env: { ...process.env, TRACEFS_PI_TEST_WS: name },
   });
   console.log(`ok ${(await mainText(name, "a.txt")) === "v4\n" ? "" : "NOT "}- main has the last merged state after pi exits`);
-  await acfs.call("ws.detach", { ws: name });
+  await tracefs.call("ws.detach", { ws: name });
   rmSync(dir, { recursive: true, force: true });
   process.exit(r.status ?? 1);
 }
 
-const name = process.env.ACFS_PI_TEST_WS!;
+const name = process.env.TRACEFS_PI_TEST_WS!;
 const dir = process.cwd();
 
-const tmp = mkdtempSync(join(tmpdir(), "acfs-pi-"));
+const tmp = mkdtempSync(join(tmpdir(), "tracefs-pi-"));
 const faux = fauxProvider();
 const modelRuntime = await ModelRuntime.create({ authPath: join(tmp, "auth.json"), modelsPath: null, modelsStorePath: join(tmp, "models-store.json") });
 modelRuntime.registerNativeProvider(faux.provider);
@@ -93,7 +93,7 @@ try {
   await turn("write v2 and b", fauxToolCall("write", { path: "a.txt", content: "v2\n" }), fauxToolCall("bash", { command: "echo b >b.txt" }));
   ok("bash tool changes the process's view", () => assert.equal(read("b.txt"), "b\n"));
 
-  const log = await acfs.call("log", { proc_id: process.env.ACFS_PROC!, n: 100 });
+  const log = await tracefs.call("log", { proc_id: process.env.TRACEFS_PROC!, n: 100 });
   const calls = entries().flatMap((e) => (e.type === "message" && e.message.role === "assistant" ? e.message.content.filter((c) => c.type === "toolCall") : []));
   ok("each assistant message has one changeset, tagged with its first call", () =>
     assert.deepEqual(
@@ -109,18 +109,18 @@ try {
   ok("/tree forward to turn 2 restores its files", () => assert.deepEqual([read("a.txt"), read("b.txt")], ["v2\n", "b\n"]));
 
   await turn("slow write", fauxToolCall("bash", { command: "echo slow >c.txt; sleep 4" }));
-  await session.prompt("/acfs undo");
-  ok("/acfs undo reverts a slow tool call whose writes an auto snapshot took", () =>
+  await session.prompt("/tracefs undo");
+  ok("/tracefs undo reverts a slow tool call whose writes an auto snapshot took", () =>
     assert.deepEqual([read("a.txt"), read("b.txt"), read("c.txt")], ["v2\n", "b\n", undefined]),
   );
-  await session.prompt("/acfs undo");
-  ok("/acfs undo reverts the last batch of tool calls", () => assert.deepEqual([read("a.txt"), read("b.txt")], ["v1\n", undefined]));
-  await session.prompt("/acfs undo");
-  ok("a second /acfs undo reverts the one before", () => assert.equal(read("a.txt"), "v0\n"));
+  await session.prompt("/tracefs undo");
+  ok("/tracefs undo reverts the last batch of tool calls", () => assert.deepEqual([read("a.txt"), read("b.txt")], ["v1\n", undefined]));
+  await session.prompt("/tracefs undo");
+  ok("a second /tracefs undo reverts the one before", () => assert.equal(read("a.txt"), "v0\n"));
 
-  await session.prompt("/acfs merge");
+  await session.prompt("/tracefs merge");
   assert.equal(await mainText(name, "a.txt"), "v0\n");
-  ok("/acfs merge brings the undone state into main", () => undefined);
+  ok("/tracefs merge brings the undone state into main", () => undefined);
 
   await turn("write v3", fauxToolCall("write", { path: "a.txt", content: "v3\n" }));
   assert.equal(await mainText(name, "a.txt"), "v3\n");

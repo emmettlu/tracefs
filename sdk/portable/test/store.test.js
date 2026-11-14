@@ -7,7 +7,7 @@ import { Store } from "../index.js";
 import { WIN, canSymlink, fresh, read, tmp, write } from "./helpers.js";
 
 function project(t) {
-  const dir = tmp("acfs-lite-src-");
+  const dir = tmp("tracefs-lite-src-");
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   write(dir, "a.txt", "v0\n");
   write(dir, "src/lib.js", "export const x = 1;\n");

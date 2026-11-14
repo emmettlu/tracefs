@@ -5,22 +5,22 @@ import path from "node:path";
 
 import { apply, copyTree, diff, entryOf, remove, same, scan, writeAtomic } from "./tree.js";
 
-export const META = "acfs-lite.json";
+export const META = "tracefs-lite.json";
 const NAME = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
 const STALE_MS = 120_000;
 const sleeper = new Int32Array(new SharedArrayBuffer(4));
 const depth = new Map();
 
-export class AcfsLiteError extends Error {
+export class TracefsLiteError extends Error {
   constructor(code, message) {
     super(message);
-    this.name = "AcfsLiteError";
+    this.name = "TracefsLiteError";
     this.code = code;
   }
 }
 
 function checkName(kind, name) {
-  if (!NAME.test(name ?? "")) throw new AcfsLiteError("invalid", `bad ${kind} name ${JSON.stringify(name)}`);
+  if (!NAME.test(name ?? "")) throw new TracefsLiteError("invalid", `bad ${kind} name ${JSON.stringify(name)}`);
 }
 
 function alive(pid) {
@@ -101,7 +101,7 @@ export class Store {
           age = Date.now() - fs.statSync(lock).mtimeMs;
         } catch {}
         if ((pid && !alive(pid)) || age > STALE_MS) remove(lock);
-        else if (i > 6000) throw new AcfsLiteError("busy", `store ${this.root} is locked by pid ${pid}`);
+        else if (i > 6000) throw new TracefsLiteError("busy", `store ${this.root} is locked by pid ${pid}`);
         else Atomics.wait(sleeper, 0, 0, 10);
       }
     }
@@ -124,8 +124,8 @@ export class Store {
 
   changeset(id, meta = this.read()) {
     const c = meta.changesets.find((c) => c.id === id);
-    if (!c) throw new AcfsLiteError("not_found", `no changeset ${id}`);
-    if (c.pruned) throw new AcfsLiteError("pruned", `changeset ${id} was pruned`);
+    if (!c) throw new TracefsLiteError("not_found", `no changeset ${id}`);
+    if (c.pruned) throw new TracefsLiteError("pruned", `changeset ${id} was pruned`);
     return c;
   }
 
@@ -141,13 +141,13 @@ export class Store {
     checkName("workspace", ws);
     return this.locked(() => {
       const meta = this.read();
-      if (meta.workspaces[ws]) throw new AcfsLiteError("exists", `workspace ${ws} exists`);
+      if (meta.workspaces[ws]) throw new TracefsLiteError("exists", `workspace ${ws} exists`);
       const dst = this.treePath(ws);
       if (from) copyTree(path.resolve(from), dst);
       else fs.mkdirSync(dst, { recursive: true });
       meta.workspaces[ws] = { trees: { main: { base: null } }, from: from ? path.resolve(from) : null };
       this.write(meta);
-      this.checkpoint(ws, "main", { author: "acfs-lite", message: "register" });
+      this.checkpoint(ws, "main", { author: "tracefs-lite", message: "register" });
       return dst;
     });
   }
@@ -155,7 +155,7 @@ export class Store {
   unregister(ws) {
     return this.locked(() => {
       const meta = this.read();
-      if (!meta.workspaces[ws]) throw new AcfsLiteError("not_found", `no workspace ${ws}`);
+      if (!meta.workspaces[ws]) throw new TracefsLiteError("not_found", `no workspace ${ws}`);
       for (const c of meta.changesets.filter((c) => c.ws === ws)) remove(this.snapPath(c.id));
       remove(path.join(this.root, "trees", ws));
       delete meta.workspaces[ws];
@@ -164,10 +164,10 @@ export class Store {
     });
   }
 
-  checkpoint(ws, tree, { author = "acfs-lite", message = "", toolCall = null, since = null, force = false } = {}) {
+  checkpoint(ws, tree, { author = "tracefs-lite", message = "", toolCall = null, since = null, force = false } = {}) {
     return this.locked(() => {
       const meta = this.read();
-      if (!meta.workspaces[ws]?.trees[tree]) throw new AcfsLiteError("not_found", `no tree ${ws}/${tree}`);
+      if (!meta.workspaces[ws]?.trees[tree]) throw new TracefsLiteError("not_found", `no tree ${ws}/${tree}`);
       const base = since ?? this.head(ws, tree, meta);
       const live = this.treePath(ws, tree);
       if (base && !force && this.diffLive(base, meta).length === 0) return null;
@@ -192,24 +192,24 @@ export class Store {
     const ca = this.changeset(a, meta);
     if (!b) return { ws: ca.ws, from: a, to: null, changes: this.diffLive(a, meta) };
     const cb = this.changeset(b, meta);
-    if (ca.ws !== cb.ws) throw new AcfsLiteError("invalid", `${a} and ${b} are of different workspaces`);
+    if (ca.ws !== cb.ws) throw new TracefsLiteError("invalid", `${a} and ${b} are of different workspaces`);
     const [sa, sb] = [this.snapPath(a), this.snapPath(b)];
     return { ws: ca.ws, from: a, to: b, changes: diff(sa, scan(sa), sb, scan(sb), Math.min(ca.taken, cb.taken)) };
   }
 
-  revert({ changeset = null, from = null, to = null, author = "acfs-lite" } = {}) {
+  revert({ changeset = null, from = null, to = null, author = "tracefs-lite" } = {}) {
     return this.locked(() => {
       const meta = this.read();
       if (changeset) {
         const c = this.changeset(changeset, meta);
-        if (!c.since) throw new AcfsLiteError("invalid", `${changeset} is the first changeset of ${c.ws}/${c.tree}`);
+        if (!c.since) throw new TracefsLiteError("invalid", `${changeset} is the first changeset of ${c.ws}/${c.tree}`);
         from = c.since;
         to = changeset;
       }
-      if (!from || !to) throw new AcfsLiteError("invalid", "revert needs a changeset or from and to");
+      if (!from || !to) throw new TracefsLiteError("invalid", "revert needs a changeset or from and to");
       const cf = this.changeset(from, meta);
       const ct = this.changeset(to, meta);
-      if (cf.ws !== ct.ws) throw new AcfsLiteError("invalid", `${from} and ${to} are of different workspaces`);
+      if (cf.ws !== ct.ws) throw new TracefsLiteError("invalid", `${from} and ${to} are of different workspaces`);
       const live = this.treePath(ct.ws, ct.tree);
       const [sf, st] = [this.snapPath(from), this.snapPath(to)];
       const ef = scan(sf);
@@ -234,7 +234,7 @@ export class Store {
     });
   }
 
-  reset(target, { author = "acfs-lite", tree = null } = {}) {
+  reset(target, { author = "tracefs-lite", tree = null } = {}) {
     return this.locked(() => {
       const meta = this.read();
       const c = this.changeset(target, meta);
@@ -259,8 +259,8 @@ export class Store {
     checkName("branch", name);
     return this.locked(() => {
       const meta = this.read();
-      if (!meta.workspaces[ws]) throw new AcfsLiteError("not_found", `no workspace ${ws}`);
-      if (meta.workspaces[ws].trees[name]) throw new AcfsLiteError("exists", `branch ${ws}/${name} exists`);
+      if (!meta.workspaces[ws]) throw new TracefsLiteError("not_found", `no workspace ${ws}`);
+      if (meta.workspaces[ws].trees[name]) throw new TracefsLiteError("exists", `branch ${ws}/${name} exists`);
       const base = this.checkpoint(ws, "main", { message: `branch ${name}` }) ?? this.head(ws, "main");
       copyTree(this.snapPath(base), this.treePath(ws, name));
       const m = this.read();
@@ -272,22 +272,22 @@ export class Store {
   }
 
   dropBranch(ws, name) {
-    if (name === "main") throw new AcfsLiteError("invalid", "main is not a branch");
+    if (name === "main") throw new TracefsLiteError("invalid", "main is not a branch");
     return this.locked(() => {
       const meta = this.read();
-      if (!meta.workspaces[ws]?.trees[name]) throw new AcfsLiteError("not_found", `no branch ${ws}/${name}`);
+      if (!meta.workspaces[ws]?.trees[name]) throw new TracefsLiteError("not_found", `no branch ${ws}/${name}`);
       remove(this.treePath(ws, name));
       delete meta.workspaces[ws].trees[name];
       this.write(meta);
     });
   }
 
-  merge(ws, name, { author = "acfs-lite", prefer = null } = {}) {
-    if (name === "main") throw new AcfsLiteError("invalid", "main is not a branch");
+  merge(ws, name, { author = "tracefs-lite", prefer = null } = {}) {
+    if (name === "main") throw new TracefsLiteError("invalid", "main is not a branch");
     return this.locked(() => {
       const meta = this.read();
       const info = meta.workspaces[ws]?.trees[name];
-      if (!info) throw new AcfsLiteError("not_found", `no branch ${ws}/${name}`);
+      if (!info) throw new TracefsLiteError("not_found", `no branch ${ws}/${name}`);
       const base = this.changeset(info.base, meta);
       const sb = this.snapPath(info.base);
       const ours = this.treePath(ws, "main");
@@ -363,7 +363,7 @@ function mergeText(base, ours, theirs) {
   const read = (f) => (f ? fs.readFileSync(f) : Buffer.alloc(0));
   const bufs = [read(base), read(ours), read(theirs)];
   if (bufs.some((b) => b.includes(0))) return null;
-  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "acfs-lite-merge-"));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), "tracefs-lite-merge-"));
   try {
     const files = ["base", "ours", "theirs"].map((n, i) => {
       const f = path.join(tmp, n);

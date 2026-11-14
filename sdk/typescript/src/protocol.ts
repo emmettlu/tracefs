@@ -1,4 +1,4 @@
-/* Generated from schema/acfs.schema.json by sdk/gen.sh; do not edit. */
+/* Generated from schema/tracefs.schema.json by sdk/gen.sh; do not edit. */
 
 /**
  * A path in API messages: a string, or `{"base64": ...}` when it is not UTF-8.
@@ -84,10 +84,10 @@ export type FsKind = "file" | "dir" | "symlink" | "fifo" | "other";
 export type PullStatus = "up-to-date" | "fast-forward" | "created";
 
 /**
- * acfs-daemon socket protocol: one JSON request line and one JSON response line per connection
+ * tracefs-daemon socket protocol: one JSON request line and one JSON response line per connection
  * (`proc.run`: a second line, `ProcExited`).
  */
-export interface AcfsProtocol {
+export interface TracefsProtocol {
   proc_exited: ProcExited;
   protocol: 2;
   request: Request;
@@ -198,7 +198,7 @@ export interface PingRequest {
   op: "ping";
 }
 /**
- * Take over a directory: acfs mounts the workspace's main over it and records every change made there.
+ * Take over a directory: tracefs mounts the workspace's main over it and records every change made there.
  */
 export interface WsRegisterRequest {
   args: WsRegisterArgs;
@@ -457,7 +457,7 @@ export interface DiffRequest {
 export interface Diff {
   a: string;
   /**
-   * Also list paths that `.acfsignore` leaves out.
+   * Also list paths that `.tracefsignore` leaves out.
    */
   all?: boolean;
   b?: string | null;
@@ -935,7 +935,7 @@ export interface WsRegistered {
   main_branch: string;
   name: string;
   /**
-   * Processes that were inside the directory when acfs took it over; they see it vanish.
+   * Processes that were inside the directory when tracefs took it over; they see it vanish.
    */
   stale_processes: string[];
   uid: number;

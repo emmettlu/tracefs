@@ -1,5 +1,5 @@
 #!/bin/bash
-# acfs run: the process's own branches, isolation, exit status and signals, failure cleanup.
+# tracefs run: the process's own branches, isolation, exit status and signals, failure cleanup.
 . "$(dirname "$0")/lib.sh"
 setup
 
@@ -30,7 +30,7 @@ ok 2.2c "main does not see it either" test ! -e $W1/a_only
 ok 2.3 "every workspace of the caller is a branch of the process" bash -c "afs proc show $A | j \"sorted(b['ws'] for b in d['branches'])\" | grep -qx \"\\['w1', 'w2'\\]\""
 ok 2.3a "the branch is mounted for the daemon, the write is in its upper" test -e $STATE/branches/$(branch $A w1)/upper/a_only
 ok 2.3b "the process does not see the daemon's mounts" bash -c "[ -z \"\$(XDIR=/ x $A 'ls -A $RUN/mnt')\" ]"
-ok 2.3c "ACFS_PROC names the process inside it" bash -c "(cd / && arun -- sh -c 'echo \$ACFS_PROC') | grep -qE '^[0-9a-z]{26}\$'"
+ok 2.3c "TRACEFS_PROC names the process inside it" bash -c "(cd / && arun -- sh -c 'echo \$TRACEFS_PROC') | grep -qE '^[0-9a-z]{26}\$'"
 C=$(spawn --ws w1)
 ok 2.3d "--ws limits the branches" bash -c "afs proc show $C | j \"[b['ws'] for b in d['branches']]\" | grep -qx \"\\['w1'\\]\""
 x $C "echo shared >$W2/direct"
@@ -87,7 +87,7 @@ sleep 1
 kill -TERM $CLI
 wait $CLI
 rc=$?
-ok 2.8b "TERM to acfs run reaches the process; its exit status comes back" test $rc = 7
+ok 2.8b "TERM to tracefs run reaches the process; its exit status comes back" test $rc = 7
 ok 2.8c "and what it wrote while stopping is merged" grep -qx bye $W2/term
 (arunx -- sh -c "echo x >killed; exec sleep 600") &
 CLI=$!
@@ -96,7 +96,7 @@ K=$(afs proc list | j "[p['id'] for p in d if p['state']=='running' and p['cmd']
 KP=$(pid_of $K)
 kill -KILL $CLI
 wait $CLI 2>/dev/null
-ok 2.8d "SIGKILL of acfs run stops the process group" bash -c "for i in \$(seq 1 50); do kill -0 $KP 2>/dev/null || exit 0; sleep 0.1; done; exit 1"
+ok 2.8d "SIGKILL of tracefs run stops the process group" bash -c "for i in \$(seq 1 50); do kill -0 $KP 2>/dev/null || exit 0; sleep 0.1; done; exit 1"
 ok 2.8e "and its work is merged" bash -c "for i in \$(seq 1 50); do [ \$(pstate $K) = merged ] && grep -qx x $W2/killed && exit 0; sleep 0.1; done; exit 1"
 cd /
 P=$(spawn)
@@ -106,8 +106,8 @@ ok 2.8f "proc kill signals the process" bash -c "j \"d['sent']\" <$T/kill.json |
 ok 2.8g "proc kill of a finished process sends nothing" bash -c "afs proc kill $P | j \"d['sent']\" | grep -qx False"
 
 # A caller without workspaces runs without branches.
-mkdir -p $T/bin && cp "$BIN/acfs" $T/bin/ && chmod 755 $T/bin $T/bin/acfs
-ok 2.9 "no workspaces: the command still runs" bash -c "setpriv --reuid=60001 --regid=60001 --clear-groups $T/bin/acfs --socket $SOCK run -- true"
+mkdir -p $T/bin && cp "$BIN/tracefs" $T/bin/ && chmod 755 $T/bin $T/bin/tracefs
+ok 2.9 "no workspaces: the command still runs" bash -c "setpriv --reuid=60001 --regid=60001 --clear-groups $T/bin/tracefs --socket $SOCK run -- true"
 
 # Daemon restart while a process runs.
 cd $W1
@@ -120,11 +120,11 @@ start_daemon
 wait $CLI
 rc=$?
 cd /
-ok 2.10 "acfs run waits for the process across a daemon restart (status unknown: 1)" bash -c "[ $rc = 1 ] && grep -q 'lost the daemon' $T/rs.out"
+ok 2.10 "tracefs run waits for the process across a daemon restart (status unknown: 1)" bash -c "[ $rc = 1 ] && grep -q 'lost the daemon' $T/rs.out"
 ok 2.10a "the restarted daemon merges its work" bash -c "for i in \$(seq 1 50); do [ \$(pstate $R) = merged ] && grep -qx after $W1/restart && exit 0; sleep 0.1; done; exit 1"
 
 for p in $(afs proc list | j "' '.join(p['id'] for p in d if p['state']=='running')"); do quit $p >/dev/null; done
-# Processes that outlived the restart are settled by the daemon after acfs run returned.
+# Processes that outlived the restart are settled by the daemon after tracefs run returned.
 # (While it settles an exited process shows as exiting.)
 for _ in $(seq 1 100); do [ "$(afs proc list | j "sum(p['state'] != 'merged' for p in d)")" = 0 ] && break; sleep 0.1; done
 ok 2.11 "every process merged, no process branches or mounts left" bash -c "

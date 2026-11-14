@@ -1,7 +1,7 @@
 [project]
-name = "acfs-sdk"
+name = "tracefs-sdk"
 version = "0.2.0"
-description = "Client for the acfs-daemon socket protocol"
+description = "Client for the tracefs-daemon socket protocol"
 requires-python = ">=3.11"
 dependencies = []
 

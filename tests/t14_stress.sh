@@ -1,5 +1,5 @@
 #!/bin/bash
-# fsstress-style consistency (stress.py): random operations through acfs leave the same
+# fsstress-style consistency (stress.py): random operations through tracefs leave the same
 # tree as a native replay, and diff, revert, reset, flatten and merges keep it so.
 . "$(dirname "$0")/lib.sh"
 setup 24G

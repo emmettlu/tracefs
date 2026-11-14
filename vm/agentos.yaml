@@ -1,4 +1,4 @@
-# Lima VM for acfs and its kernel probes: Arch Linux ARM built by build-alarm-image.sh,
+# Lima VM for tracefs and its kernel probes: Arch Linux ARM built by build-alarm-image.sh,
 # prepared by setup-guest.sh.
 # limactl create --name=agentos vm/agentos.yaml && limactl start agentos
 images:
@@ -14,7 +14,7 @@ containerd:
   user: false
 mountType: virtiofs
 mounts:
-- location: ~/Repos/acfs
+- location: ~/Repos/tracefs
   writable: false
 - location: ~/.cache/afsdata
   writable: false

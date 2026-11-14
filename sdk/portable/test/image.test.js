@@ -42,27 +42,27 @@ function cowCheck(t, env, kind) {
   return { s, store, main, id, used };
 }
 
-test("ACFS_LITE_ROOT gives a plain directory store", (t) => {
+test("TRACEFS_LITE_ROOT gives a plain directory store", (t) => {
   const root = tmp();
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
-  const s = ensure({ env: { ACFS_LITE_ROOT: root } });
+  const s = ensure({ env: { TRACEFS_LITE_ROOT: root } });
   assert.deepEqual(s, { kind: "dir", root });
-  assert.ok(fs.existsSync(path.join(root, "acfs-lite.json")));
+  assert.ok(fs.existsSync(path.join(root, "tracefs-lite.json")));
 });
 
-test("ACFS_LITE_PLAIN skips the image", (t) => {
+test("TRACEFS_LITE_PLAIN skips the image", (t) => {
   const h = tmp();
   t.after(() => fs.rmSync(h, { recursive: true, force: true }));
-  const s = ensure({ env: { ACFS_LITE_HOME: h }, plain: true });
+  const s = ensure({ env: { TRACEFS_LITE_HOME: h }, plain: true });
   assert.equal(s.kind, "dir");
   assert.equal(s.root, path.join(h, "store"));
   assert.equal(readState(h).kind, "dir");
-  assert.equal(detach({ env: { ACFS_LITE_HOME: h } }), false);
+  assert.equal(detach({ env: { TRACEFS_LITE_HOME: h } }), false);
 });
 
 test("macOS: an APFS sparse image whose snapshots are clones", { skip: process.platform !== "darwin" && "not macOS" }, (t) => {
   const h = tmp();
-  const env = { ACFS_LITE_HOME: h };
+  const env = { TRACEFS_LITE_HOME: h };
   cleanup(t, h, env);
   const { store, main, id, used } = cowCheck(t, env, "apfs-image");
   assert.ok(id);
@@ -78,19 +78,19 @@ test("macOS: an APFS sparse image whose snapshots are clones", { skip: process.p
 
 test("Linux: btrfs home is used in place", { skip: process.platform !== "linux" && "not Linux" }, (t) => {
   const h = tmp();
-  cleanup(t, h, { ACFS_LITE_HOME: h });
+  cleanup(t, h, { TRACEFS_LITE_HOME: h });
   if (fsType(h) !== "btrfs") return t.skip(`${h} is ${fsType(h)}`);
-  const { id, used } = cowCheck(t, { ACFS_LITE_HOME: h }, "btrfs");
+  const { id, used } = cowCheck(t, { TRACEFS_LITE_HOME: h }, "btrfs");
   assert.ok(id);
   assert.ok(used < BIG / 4, `a snapshot of a 64 MiB file took ${used} bytes`);
 });
 
 test("Linux: a btrfs image off btrfs, with reflink snapshots", { skip: linuxImage() ?? false }, (t) => {
-  const h = path.join(process.env.ACFS_LITE_TEST_DIR ?? process.env.HOME, `.acfs-lite-test-${process.pid}`);
+  const h = path.join(process.env.TRACEFS_LITE_TEST_DIR ?? process.env.HOME, `.tracefs-lite-test-${process.pid}`);
   fs.mkdirSync(h, { recursive: true });
-  const env = { ACFS_LITE_HOME: h };
+  const env = { TRACEFS_LITE_HOME: h };
   cleanup(t, h, env);
-  if (fsType(h) === "btrfs") return t.skip("home is btrfs; set ACFS_LITE_TEST_DIR to a directory off btrfs");
+  if (fsType(h) === "btrfs") return t.skip("home is btrfs; set TRACEFS_LITE_TEST_DIR to a directory off btrfs");
   let r;
   try {
     r = cowCheck(t, env, "btrfs-image");
@@ -107,7 +107,7 @@ test("Linux: a btrfs image off btrfs, with reflink snapshots", { skip: linuxImag
 
 test("Windows: an NTFS VHDX mounted on a folder", { skip: process.platform !== "win32" ? "not Windows" : !admin() && "needs an elevated shell (diskpart)" }, (t) => {
   const h = tmp();
-  const env = { ACFS_LITE_HOME: h };
+  const env = { TRACEFS_LITE_HOME: h };
   cleanup(t, h, env);
   const { main, id } = cowCheck(t, env, "ntfs-image");
   assert.ok(id);

@@ -17,10 +17,10 @@ test("open picks the portable backend inside a tree and nothing outside", (t) =>
   assert.equal(open({ cwd: "/definitely/not/here", env: {} }), null);
 });
 
-test("open ignores ACFS_PROC without a daemon socket", (t) => {
+test("open ignores TRACEFS_PROC without a daemon socket", (t) => {
   const s = fresh(t);
   const main = s.register("app");
-  assert.ok(open({ cwd: main, env: { ACFS_PROC: "p1", ACFS_SOCKET: path.join(tmp(), "none.sock") } }) instanceof PortableBackend);
+  assert.ok(open({ cwd: main, env: { TRACEFS_PROC: "p1", TRACEFS_SOCKET: path.join(tmp(), "none.sock") } }) instanceof PortableBackend);
 });
 
 test("portable backend: checkpoint, undo, diff, log and settle", async (t) => {
@@ -58,7 +58,7 @@ test("portable backend reports conflicts as text", async (t) => {
 });
 
 function fakeDaemon(t, handler) {
-  const dir = tmp("acfsd-");
+  const dir = tmp("tracefsd-");
   const sock = path.join(dir, "d.sock");
   const seen = [];
   const server = net.createServer((c) => {
@@ -88,7 +88,7 @@ function fakeDaemon(t, handler) {
   );
 }
 
-test("daemon backend speaks acfsd's protocol", { skip: WIN && "unix sockets" }, async (t) => {
+test("daemon backend speaks tracefsd's protocol", { skip: WIN && "unix sockets" }, async (t) => {
   const { sock, seen } = await fakeDaemon(t, (req) => {
     switch (req.op) {
       case "proc.changeset":
@@ -107,7 +107,7 @@ test("daemon backend speaks acfsd's protocol", { skip: WIN && "unix sockets" }, 
         throw Object.assign(new Error(`no op ${req.op}`), { code: "invalid" });
     }
   });
-  const env = { ACFS_PROC: "p", ACFS_SOCKET: sock };
+  const env = { TRACEFS_PROC: "p", TRACEFS_SOCKET: sock };
   const b = process.platform === "linux" ? open({ cwd: tmp(), env }) : new DaemonBackend("p", sock);
   assert.ok(b instanceof DaemonBackend);
   assert.equal(await b.checkpoint("m", { toolCall: "t", since: "cs1", author: "pi" }), "cs9");
@@ -118,6 +118,6 @@ test("daemon backend speaks acfsd's protocol", { skip: WIN && "unix sockets" }, 
   assert.deepEqual(seen.at(-1), { op: "revert", args: { changeset: "cs9" } });
   assert.deepEqual((await b.log(5))[0], { id: "cs9", author: "pi", message: "m", created_at: 1, tool_call: "t" });
   assert.deepEqual(await b.settle(), { state: "merged", conflicts: [] });
-  assert.equal(await b.status(), "acfs: process p, running; branches w (dirty)");
+  assert.equal(await b.status(), "tracefs: process p, running; branches w (dirty)");
   await assert.rejects(b.call("nope"), { code: "invalid" });
 });

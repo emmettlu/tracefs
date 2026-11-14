@@ -1,4 +1,4 @@
-# Shared helpers for acfs verification scripts. Run as root via sudo.
+# Shared helpers for tracefs verification scripts. Run as root via sudo.
 set -u
 V=${V:-$(getent passwd "${SUDO_USER:?run via sudo}" | cut -d: -f6)/agentfs-verify} # see vm/setup-guest.sh
 OVL=$V/ovl

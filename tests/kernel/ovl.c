@@ -1,4 +1,4 @@
-// Minimal helper around the new mount API for acfs verification.
+// Minimal helper around the new mount API for tracefs verification.
 //
 // ovl [options] --target PATH
 //   -l DIR        lowerdir+ (repeatable, first = top)

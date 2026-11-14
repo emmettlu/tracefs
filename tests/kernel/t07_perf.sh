@@ -1,6 +1,6 @@
 #!/bin/bash
 # Performance (AGENTS.md 8) on the test machine's NVMe btrfs root (compress=zstd:1).
-# Envs: native = rw snapshot of base; ovl = kernel overlay (acfs options) over ro base;
+# Envs: native = rw snapshot of base; ovl = kernel overlay (tracefs options) over ro base;
 # fuse = fuse-overlayfs over the same base; loop-* = same on a loop btrfs image (fallback).
 . "$(dirname "$0")/lib.sh"
 P=$V/perf            # on the root btrfs, not /var/lib

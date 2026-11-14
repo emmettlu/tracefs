@@ -1,21 +1,21 @@
 import { connect } from "node:net";
 
-import type { AcfsProtocol, Request, Response } from "./protocol.ts";
+import type { TracefsProtocol, Request, Response } from "./protocol.ts";
 
 export type * from "./protocol.ts";
 
-export type Results = AcfsProtocol["results"];
+export type Results = TracefsProtocol["results"];
 export type Op = keyof Results;
 export type ArgsOf<O extends Op> = Extract<Request, { op: O }> extends { args: infer A } ? A : never;
 
-export const DEFAULT_SOCKET = "/run/acfs/acfs-daemon.sock";
+export const DEFAULT_SOCKET = "/run/tracefs/tracefs-daemon.sock";
 
-export class AcfsError extends Error {
+export class TracefsError extends Error {
   code: string;
 
   constructor(code: string, message: string) {
     super(message);
-    this.name = "AcfsError";
+    this.name = "TracefsError";
     this.code = code;
   }
 }
@@ -23,7 +23,7 @@ export class AcfsError extends Error {
 export class Client {
   socket: string;
 
-  constructor(socket: string = process.env.ACFS_SOCKET ?? DEFAULT_SOCKET) {
+  constructor(socket: string = process.env.TRACEFS_SOCKET ?? DEFAULT_SOCKET) {
     this.socket = socket;
   }
 
@@ -39,11 +39,11 @@ export class Client {
         try {
           r = JSON.parse(Buffer.concat(chunks).toString("utf8"));
         } catch (e) {
-          reject(new AcfsError("invalid", `bad response: ${e}`));
+          reject(new TracefsError("invalid", `bad response: ${e}`));
           return;
         }
         if (r.ok) resolve(r.result as Results[O]);
-        else reject(new AcfsError(r.error?.code ?? "internal", r.error?.message ?? "unknown error"));
+        else reject(new TracefsError(r.error?.code ?? "internal", r.error?.message ?? "unknown error"));
       });
     });
   }

@@ -70,12 +70,12 @@ class Harness {
   }
 
   async tool(action, extra = {}) {
-    return this.ctx.tools.get("acfs").execute({ action, ...extra }, { agent: this.agent, callId: "x", signal: new AbortController().signal });
+    return this.ctx.tools.get("tracefs").execute({ action, ...extra }, { agent: this.agent, callId: "x", signal: new AbortController().signal });
   }
 }
 
 function setup(t) {
-  const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "dsh-acfs-")));
+  const root = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "dsh-tracefs-")));
   t.after(() => fs.rmSync(root, { recursive: true, force: true }));
   const store = Store.init(root);
   const main = store.register("app");
@@ -106,7 +106,7 @@ test("the bundle manifest inserts the plugin by package name", () => {
   const patch = fs.readFileSync(new URL("../cordis.patch.yml", import.meta.url), "utf8");
   assert.deepEqual(pkg.dsh.bundle.patch, ["./cordis.patch.yml"]);
   assert.match(patch, new RegExp(`name: ${pkg.name}$`, "m"));
-  assert.equal(plugin.name, "acfs");
+  assert.equal(plugin.name, "tracefs");
   assert.deepEqual(plugin.inject, ["tools", "workingDirectory"]);
 });
 
@@ -134,7 +134,7 @@ test("turn end merges the branch into main", async (t) => {
   assert.equal(get(main, "a.txt"), "v1\n");
 });
 
-test("the acfs tool: log, diff, undo, merge, status", async (t) => {
+test("the tracefs tool: log, diff, undo, merge, status", async (t) => {
   const { main, br } = setup(t);
   const h = new Harness(t, br);
   await h.call("write", { path: "a.txt" }, () => put(br, "a.txt", "v1\n"));
@@ -151,7 +151,7 @@ test("the acfs tool: log, diff, undo, merge, status", async (t) => {
   put(br, "z.txt", "z\n");
   assert.equal(await h.tool("merge"), "merged");
   assert.equal(get(main, "z.txt"), "z\n");
-  assert.match(await h.tool("status"), /acfs-lite app\/agent/);
+  assert.match(await h.tool("status"), /tracefs-lite app\/agent/);
 });
 
 test("undo reports a conflict and keeps the later change", async (t) => {
@@ -170,18 +170,18 @@ test("merge conflicts at turn end are warned, not thrown", async (t) => {
   put(main, "a.txt", "main\n");
   await h.call("write", { path: "a.txt" }, () => put(br, "a.txt", "branch\n"));
   await h.endTurn();
-  assert.deepEqual(h.ctx.warnings, ["acfs: not merged yet, conflicts in app: a.txt (both modified)"]);
+  assert.deepEqual(h.ctx.warnings, ["tracefs: not merged yet, conflicts in app: a.txt (both modified)"]);
   assert.equal(get(main, "a.txt"), "main\n");
 });
 
 test("outside any store the plugin stays out of the way", async (t) => {
-  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "dsh-acfs-none-")));
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "dsh-tracefs-none-")));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
   const h = new Harness(t, dir);
   await h.call("write", { path: "a.txt" }, () => put(dir, "a.txt", "x"));
   await h.step();
   await h.endTurn();
-  assert.match(await h.tool("status"), /acfs is not active/);
+  assert.match(await h.tool("status"), /tracefs is not active/);
   assert.deepEqual(h.ctx.warnings, []);
 });
 
@@ -197,7 +197,7 @@ test("writeTools and merge are configurable", async (t) => {
   put(br, "q", "q");
   ctx.emit("tools/result", exec, {});
   ctx.emit("session/event", session, { type: "turn/end" });
-  await ctx.tools.get("acfs").execute({ action: "status" }, { agent });
+  await ctx.tools.get("tracefs").execute({ action: "status" }, { agent });
   assert.equal(store.log({ ws: "app", tree: "agent", n: 5 }).find((c) => c.tool_call === "k1")?.author, "me");
   assert.equal(get(main, "q"), undefined);
 });

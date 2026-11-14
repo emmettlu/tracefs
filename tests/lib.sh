@@ -1,6 +1,6 @@
-# Shared helpers for acfs integration tests. Run as root on a btrfs-capable host.
+# Shared helpers for tracefs integration tests. Run as root on a btrfs-capable host.
 set -u
-SRC=${SRC:-/home/emmett/acfs-src}
+SRC=${SRC:-/home/emmett/tracefs-src}
 BIN=${BIN:-$SRC/target/release}
 SLICE=afstest
 AGENT=1000 # uid of the agent processes; mkws trees belong to it
@@ -10,7 +10,7 @@ NAME=${NAME:-$(basename "$0" .sh)}
 TROOT=${TROOT:-/var/tmp/afst}
 T=$TROOT/$NAME
 RUN=/run/afst-$NAME
-SOCK=$RUN/acfs-daemon.sock
+SOCK=$RUN/tracefs-daemon.sock
 STATE=$T/state
 LOG=$T/daemon.log
 PASS=0
@@ -27,14 +27,14 @@ bad() { # bad ID DESC CMD... (expects failure)
 	shift 2
 	if "$@" >$TROOT/last-$NAME.out 2>&1; then res "$id" FAIL "$desc: unexpectedly succeeded"; else res "$id" PASS "$desc: $(tail -c 200 $TROOT/last-$NAME.out | tr '\n' ' ')"; fi
 }
-afs() { "$BIN/acfs" --socket "$SOCK" "$@"; }
+afs() { "$BIN/tracefs" --socket "$SOCK" "$@"; }
 j() { python3 -c "import json,sys; d=json.load(sys.stdin); print(eval(sys.argv[1], {'d': d}))" "$1"; }
 ms() { echo $(($(date +%s%N) / 1000000)); }
 export BIN SOCK STATE RUN T TROOT AGENT
 export -f afs j ms
 
 cleanup() {
-	pkill -f "acfsd --state-dir $STATE" 2>/dev/null
+	pkill -f "tracefsd --state-dir $STATE" 2>/dev/null
 	sleep 0.2
 	systemctl kill -s KILL "$SLICE.slice" >/dev/null 2>&1
 	sleep 0.2
@@ -60,7 +60,7 @@ start_daemon() { # extra args passed through; WSROOT= checks workspaces against 
 	case " $* " in *" --auto-quiet-ms"*) ;; *) set -- --auto-quiet-ms 3600000 --auto-max-ms 3600000 "$@" ;; esac
 	# NOTIFY_SOCKET as under the systemd unit (Type=notify); nothing listens on it.
 	# DIFF_ENV: by default every diff v2 is also computed as v1 and must agree.
-	env ${DIFF_ENV:-ACFS_DIFF_CHECK=1} NOTIFY_SOCKET=$RUN/notify.sock "$BIN/acfsd" --state-dir "$STATE" --run-dir "$RUN" --slice $SLICE --stop-timeout-ms 2000 ${root:+"--workspace-root=$root"} "$@" >>"$LOG" 2>&1 &
+	env ${DIFF_ENV:-TRACEFS_DIFF_CHECK=1} NOTIFY_SOCKET=$RUN/notify.sock "$BIN/tracefsd" --state-dir "$STATE" --run-dir "$RUN" --slice $SLICE --stop-timeout-ms 2000 ${root:+"--workspace-root=$root"} "$@" >>"$LOG" 2>&1 &
 	DPID=$!
 	for _ in $(seq 1 100); do [ -S "$SOCK" ] && afs ping >/dev/null 2>&1 && return 0; sleep 0.05; done
 	echo "daemon did not start"; tail -5 "$LOG"; return 1
@@ -98,10 +98,10 @@ mkws() {
 	echo "$d"
 }
 
-# Agent processes (acfs run) as uid $AGENT.
-arun() { setpriv --reuid=$AGENT --regid=$AGENT --clear-groups "$BIN/acfs" --socket "$SOCK" run "$@"; }
-# (arunx ...) &: the same, the background job's pid being acfs run itself.
-arunx() { exec setpriv --reuid=$AGENT --regid=$AGENT --clear-groups "$BIN/acfs" --socket "$SOCK" run "$@"; }
+# Agent processes (tracefs run) as uid $AGENT.
+arun() { setpriv --reuid=$AGENT --regid=$AGENT --clear-groups "$BIN/tracefs" --socket "$SOCK" run "$@"; }
+# (arunx ...) &: the same, the background job's pid being tracefs run itself.
+arunx() { exec setpriv --reuid=$AGENT --regid=$AGENT --clear-groups "$BIN/tracefs" --socket "$SOCK" run "$@"; }
 # spawn [run options...]: start an idle agent from the current directory, print its process
 # id. It runs until `quit ID`; `x ID CMD` runs CMD inside it.
 spawn() {
@@ -109,7 +109,7 @@ spawn() {
 	mkdir -p $d && chmod 777 $d
 	tag=$d/$(date +%s%N)$RANDOM
 	(
-		arun "$@" -- sh -c "echo \$ACFS_PROC >$tag.id; while [ ! -e $tag.stop ]; do sleep 0.2; done" >$tag.out 2>$tag.err
+		arun "$@" -- sh -c "echo \$TRACEFS_PROC >$tag.id; while [ ! -e $tag.stop ]; do sleep 0.2; done" >$tag.out 2>$tag.err
 		echo $? >$tag.rc
 	) >/dev/null 2>&1 &
 	echo $! >$tag.sub
@@ -117,7 +117,7 @@ spawn() {
 	cat $tag.id 2>/dev/null || { cat $tag.err >&2; return 1; }
 }
 tag_of() { local f; f=$(grep -l "^$1\$" $T/ag/*.id) && echo "${f%.id}"; }
-# quit ID: let the agent exit, wait for acfs run to return (its work is merged), print its status.
+# quit ID: let the agent exit, wait for tracefs run to return (its work is merged), print its status.
 quit() {
 	local tag
 	tag=$(tag_of "$1") || return 1

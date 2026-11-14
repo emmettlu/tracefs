@@ -1,8 +1,8 @@
 #!/bin/bash
-# Kernel, btrfs and overlayfs behaviour that acfs relies on or works around.
-# Each check states the expected behaviour; a FAIL means the layer below acfs changed and
+# Kernel, btrfs and overlayfs behaviour that tracefs relies on or works around.
+# Each check states the expected behaviour; a FAIL means the layer below tracefs changed and
 # the part of AGENTS.md citing that id ("验证 x.y") needs another look.
-# acfs's own behaviour is tested by tests/t*.sh.
+# tracefs's own behaviour is tested by tests/t*.sh.
 . "$(dirname "$0")/lib.sh"
 R=$(mkimg probe)
 cd "$R"
@@ -68,7 +68,7 @@ mnt_ovl mnt/p1 branches/p1 bases/b1
 r=0
 mnt_ovl mnt/p1b branches/p1 bases/b1 2>/dev/null && r=1 && umount mnt/p1b
 umount mnt/p1
-check 2.6 "index=off does not stop a second mount of the same upper (acfs enforces it)" test $r = 1
+check 2.6 "index=off does not stop a second mount of the same upper (tracefs enforces it)" test $r = 1
 
 snap_ro branches/p1 snaps/s0
 r=0
@@ -76,7 +76,7 @@ if mnt_ovl mnt/s0 snaps/s0 bases/b1 2>/dev/null; then
 	[ "$(findmnt -no OPTIONS mnt/s0 | cut -d, -f1)" = ro ] && r=1
 	umount mnt/s0
 fi
-check 2.7 "an upper on a read-only snapshot mounts but silently comes up read-only (acfs checks)" test $r = 1
+check 2.7 "an upper on a read-only snapshot mounts but silently comes up read-only (tracefs checks)" test $r = 1
 
 r=0
 mkdir -p mnt/fd
@@ -210,7 +210,7 @@ new_branch branches/victim && mnt_ovl mnt/victim branches/victim bases/b1
 r=0
 btrfs -q subvolume delete branches/victim 2>/dev/null && echo after >mnt/victim/after 2>/dev/null && r=1
 umount -l mnt/victim
-check 4.5 "a mounted branch subvolume can be deleted and the overlay keeps writing (acfs unmounts first)" test $r = 1
+check 4.5 "a mounted branch subvolume can be deleted and the overlay keeps writing (tracefs unmounts first)" test $r = 1
 
 # idmap
 unshare --user --map-users=0:0:1 --map-users=1000:400000:1 --map-groups=0:0:1 --map-groups=1000:400000:1 sleep 600 &

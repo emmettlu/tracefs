@@ -1,14 +1,14 @@
 #!/bin/bash
-# Rule files (AGENTS.md 5.7, 5.13): .acfsignore keeps build output out of merges, diffs and
-# automatic changesets; .acfsmerge decides paths both sides changed.
+# Rule files (AGENTS.md 5.7, 5.13): .tracefsignore keeps build output out of merges, diffs and
+# automatic changesets; .tracefsmerge decides paths both sides changed.
 . "$(dirname "$0")/lib.sh"
 setup
 stop_daemon
 start_daemon --auto-quiet-ms 300 --auto-max-ms 1500
 
 W=$(mkws w)
-printf 'target/\n*.o\n' >$W/.acfsignore
-printf '*.bin newer\nCHANGELOG union\nCargo.toml unit=cargo\nCargo.lock unit=cargo\n.env ours\ndist/ theirs\n' >$W/.acfsmerge
+printf 'target/\n*.o\n' >$W/.tracefsignore
+printf '*.bin newer\nCHANGELOG union\nCargo.toml unit=cargo\nCargo.lock unit=cargo\n.env ours\ndist/ theirs\n' >$W/.tracefsmerge
 head -c 2048 /dev/urandom >$W/blob.bin && echo base >$W/CHANGELOG && echo t0 >$W/Cargo.toml && echo l0 >$W/Cargo.lock
 echo E0 >$W/.env && mkdir -p $W/dist && echo d0 >$W/dist/app.js
 chown -R 1000:1000 $W
@@ -64,7 +64,7 @@ ncs() { afs log --ws "$1" -n 100000 | j "len(d)"; }
 settle() { for _ in $(seq 1 50); do sleep 0.2; [ "$(wsf "$1" pending)" = False ] && sleep 0.5 && return 0; done; return 1; }
 export -f wsf ncs settle
 L=$(mkws lv)
-printf 'target/\n' >$L/.acfsignore && chown 1000:1000 $L/.acfsignore
+printf 'target/\n' >$L/.tracefsignore && chown 1000:1000 $L/.tracefsignore
 afs ws register lv --from $L >/dev/null
 N0=$(ncs lv)
 mkdir -p $L/target && echo x >$L/target/a

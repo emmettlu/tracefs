@@ -1,5 +1,5 @@
 #!/bin/bash
-# Prepare the Lima guest (agentos.yaml) for acfs: packages, the kernel probes of tests/kernel
+# Prepare the Lima guest (agentos.yaml) for tracefs: packages, the kernel probes of tests/kernel
 # and ovl, test data from the read-only host cache. Run as root via sudo from the repo:
 #   limactl shell agentos -- sudo bash vm/setup-guest.sh
 set -eux

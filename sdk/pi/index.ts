@@ -3,7 +3,7 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { type Backend, open } from "../portable/index.js";
 
 const READ_ONLY = new Set(["read", "grep", "find", "ls"]);
-const CHECKPOINT = "acfs-checkpoint";
+const CHECKPOINT = "tracefs-checkpoint";
 const AUTHOR = "pi";
 
 interface CheckpointData {
@@ -15,27 +15,27 @@ interface CheckpointData {
 }
 
 export default function (pi: ExtensionAPI) {
-  const acfs = open({ cwd: process.cwd() });
+  const tracefs = open({ cwd: process.cwd() });
   let before: string | undefined;
   let asked = false;
 
-  pi.registerCommand("acfs", {
-    description: "acfs: status | log | diff | undo | merge",
+  pi.registerCommand("tracefs", {
+    description: "tracefs: status | log | diff | undo | merge",
     handler: async (args, ctx) => {
-      if (!acfs) {
+      if (!tracefs) {
         ctx.ui.notify(
-          "acfs: not active here. Start pi under `acfs run` (Linux, acfsd) or in a tree of an acfs-lite store (`acfs-lite register <ws> <dir>`, then cd to the printed path).",
+          "tracefs: not active here. Start pi under `tracefs run` (Linux, tracefsd) or in a tree of an tracefs-lite store (`tracefs-lite register <ws> <dir>`, then cd to the printed path).",
           "warning",
         );
         return;
       }
-      await guard(ctx, () => command(acfs, args.trim().split(/\s+/).filter(Boolean)[0] ?? "status", ctx));
+      await guard(ctx, () => command(tracefs, args.trim().split(/\s+/).filter(Boolean)[0] ?? "status", ctx));
     },
   });
 
-  if (!acfs) return;
-  const backend: Backend = acfs;
-  const key = acfs.kind === "acfsd" ? acfs.proc : `${acfs.ws}/${acfs.tree}`;
+  if (!tracefs) return;
+  const backend: Backend = tracefs;
+  const key = tracefs.kind === "tracefsd" ? tracefs.proc : `${tracefs.ws}/${tracefs.tree}`;
 
   const branch = (ctx: ExtensionContext, leaf?: string | null) => (leaf === null ? [] : ctx.sessionManager.getBranch(leaf ?? undefined));
 
@@ -51,7 +51,7 @@ export default function (pi: ExtensionAPI) {
     try {
       await f();
     } catch (e) {
-      const msg = `acfs: ${e instanceof Error ? e.message : e}`;
+      const msg = `tracefs: ${e instanceof Error ? e.message : e}`;
       if (ctx.hasUI) ctx.ui.notify(msg, "error");
       else console.error(msg);
     }
@@ -62,16 +62,16 @@ export default function (pi: ExtensionAPI) {
   async function restore(ctx: ExtensionContext, from: string | null, to: string | null) {
     const target = stateAt(ctx, to);
     if (!target || target === stateAt(ctx, from)) return;
-    const mode = process.env.ACFS_PI_RESTORE ?? "ask";
-    if (mode === "never" || (mode === "ask" && !(ctx.hasUI && (await ctx.ui.confirm("acfs", "Bring the files back to this point?"))))) return;
+    const mode = process.env.TRACEFS_PI_RESTORE ?? "ask";
+    if (mode === "never" || (mode === "ask" && !(ctx.hasUI && (await ctx.ui.confirm("tracefs", "Bring the files back to this point?"))))) return;
     const r = await backend.reset(target);
     if (r.conflict) throw new Error(`reset to ${target} conflicts`);
     pi.appendEntry<CheckpointData>(CHECKPOINT, { proc: key, target: (await changeset("after reset", undefined, stateAt(ctx, from))) ?? target });
-    ctx.ui.notify(`acfs: files back to ${target}`, "info");
+    ctx.ui.notify(`tracefs: files back to ${target}`, "info");
   }
 
   pi.on("session_start", async (e, ctx) => {
-    ctx.ui.setStatus("acfs", backend.describe());
+    ctx.ui.setStatus("tracefs", backend.describe());
     if (e.reason === "fork") await guard(ctx, () => restore(ctx, null, ctx.sessionManager.getLeafId()));
   });
 
@@ -111,7 +111,7 @@ export default function (pi: ExtensionAPI) {
   pi.on("agent_settled", async (_e, ctx) => {
     await guard(ctx, async () => {
       const r = await backend.settle({ author: AUTHOR });
-      if (r.conflicts.length) ctx.ui.notify(`acfs: not merged yet, conflicts in ${r.conflicts.join(", ")}`, "warning");
+      if (r.conflicts.length) ctx.ui.notify(`tracefs: not merged yet, conflicts in ${r.conflicts.join(", ")}`, "warning");
     });
   });
 
@@ -140,10 +140,10 @@ export default function (pi: ExtensionAPI) {
       if (r.conflict) throw new Error(`undo of ${last.target} conflicts with later changes`);
       const now = (await changeset("after undo", undefined, last.target)) ?? last.target;
       pi.appendEntry<CheckpointData>(CHECKPOINT, { proc: key, target: now, undid: last.target });
-      ctx.ui.notify(`acfs: undid ${last.target}`, "info");
+      ctx.ui.notify(`tracefs: undid ${last.target}`, "info");
     } else if (cmd === "merge") {
       const r = await b.settle({ author: AUTHOR });
-      ctx.ui.notify(`acfs: ${r.state}${r.conflicts.length ? `, conflicts left: ${r.conflicts.join(", ")}` : ""}`, r.conflicts.length ? "warning" : "info");
+      ctx.ui.notify(`tracefs: ${r.state}${r.conflicts.length ? `, conflicts left: ${r.conflicts.join(", ")}` : ""}`, r.conflicts.length ? "warning" : "info");
     } else {
       throw new Error(`unknown subcommand ${cmd}`);
     }

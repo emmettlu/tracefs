@@ -110,7 +110,7 @@ function link(target, dst, srcAbs) {
 }
 
 function cloneTree(src, dst) {
-  if (process.platform !== "darwin" || process.env.ACFS_LITE_NO_CLONE === "1" || fs.existsSync(dst)) return false;
+  if (process.platform !== "darwin" || process.env.TRACEFS_LITE_NO_CLONE === "1" || fs.existsSync(dst)) return false;
   fs.mkdirSync(path.dirname(dst), { recursive: true });
   const r = spawnSync("/bin/cp", ["-c", "-R", "-p", src, dst], { stdio: "ignore" });
   if (r.status === 0) return true;

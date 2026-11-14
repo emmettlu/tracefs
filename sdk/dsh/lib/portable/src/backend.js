@@ -14,7 +14,7 @@ export class PortableBackend {
   describe() {
     const s = readState();
     const how = s && s.root === this.store.root ? s.kind : "dir";
-    return `acfs-lite ${this.ws}/${this.tree} (${how})`;
+    return `tracefs-lite ${this.ws}/${this.tree} (${how})`;
   }
 
   get path() {
@@ -64,7 +64,7 @@ export class PortableBackend {
 
 export function open({ cwd = process.cwd(), env = process.env } = {}) {
   const socket = DaemonBackend.available(env);
-  if (socket) return new DaemonBackend(env.ACFS_PROC, socket);
+  if (socket) return new DaemonBackend(env.TRACEFS_PROC, socket);
   let found = null;
   try {
     found = Store.find(cwd);

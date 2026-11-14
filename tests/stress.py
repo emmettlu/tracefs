@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""Deterministic random file operations, like fsstress, for acfs consistency checks.
+"""Deterministic random file operations, like fsstress, for tracefs consistency checks.
 
     stress.py ROOT SEED N [--protect LIST] [--map OUT]
 
 Runs N operations below ROOT chosen by SEED. Every choice depends only on SEED and the
 sorted state of the tree, so the same run on two equal trees leaves equal trees (one
-native, one through acfs). Operations: create, append, overwrite in place, truncate,
+native, one through tracefs). Operations: create, append, overwrite in place, truncate,
 save as a new file renamed over, mkdir, rename files and directories (also across
 directories and over existing files), delete files and trees, chmod, symlinks, user
 xattrs, fifos.

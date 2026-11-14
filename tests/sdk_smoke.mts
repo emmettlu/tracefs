@@ -1,6 +1,6 @@
 import { appendFileSync, writeFileSync } from "node:fs";
 
-import { AcfsError, type ArgsOf, Client, type Op, type Results } from "../sdk/typescript/src/index.ts";
+import { TracefsError, type ArgsOf, Client, type Op, type Results } from "../sdk/typescript/src/index.ts";
 
 const c = new Client();
 const [log, name] = process.argv.slice(2);
@@ -35,7 +35,7 @@ for (const [op, args, code] of [
     await c.call(op as Op, args as never);
     throw new Error(`${op}: expected an error`);
   } catch (e) {
-    assert(e instanceof AcfsError && e.code === code, `${op}: ${e}`);
+    assert(e instanceof TracefsError && e.code === code, `${op}: ${e}`);
   }
 }
 assert((await call("session.merge", { session: s })).state === "merged", "merge");

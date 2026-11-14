@@ -4,13 +4,13 @@
       { "hooks": [{ "type": "command", "command": "node \"$PLUGIN_ROOT/hooks/hook.mjs\"", "commandWindows": "node -e \"import(require('url').pathToFileURL(require('path').join(process.env.PLUGIN_ROOT,'hooks','hook.mjs')).href)\"", "timeout": 30 }] }
     ],
     "PreToolUse": [
-      { "matcher": "Bash|apply_patch|Edit|Write", "hooks": [{ "type": "command", "command": "node \"$PLUGIN_ROOT/hooks/hook.mjs\"", "commandWindows": "node -e \"import(require('url').pathToFileURL(require('path').join(process.env.PLUGIN_ROOT,'hooks','hook.mjs')).href)\"", "timeout": 120, "statusMessage": "acfs: checkpoint" }] }
+      { "matcher": "Bash|apply_patch|Edit|Write", "hooks": [{ "type": "command", "command": "node \"$PLUGIN_ROOT/hooks/hook.mjs\"", "commandWindows": "node -e \"import(require('url').pathToFileURL(require('path').join(process.env.PLUGIN_ROOT,'hooks','hook.mjs')).href)\"", "timeout": 120, "statusMessage": "tracefs: checkpoint" }] }
     ],
     "PostToolUse": [
-      { "matcher": "Bash|apply_patch|Edit|Write", "hooks": [{ "type": "command", "command": "node \"$PLUGIN_ROOT/hooks/hook.mjs\"", "commandWindows": "node -e \"import(require('url').pathToFileURL(require('path').join(process.env.PLUGIN_ROOT,'hooks','hook.mjs')).href)\"", "timeout": 120, "statusMessage": "acfs: changeset" }] }
+      { "matcher": "Bash|apply_patch|Edit|Write", "hooks": [{ "type": "command", "command": "node \"$PLUGIN_ROOT/hooks/hook.mjs\"", "commandWindows": "node -e \"import(require('url').pathToFileURL(require('path').join(process.env.PLUGIN_ROOT,'hooks','hook.mjs')).href)\"", "timeout": 120, "statusMessage": "tracefs: changeset" }] }
     ],
     "Stop": [
-      { "hooks": [{ "type": "command", "command": "node \"$PLUGIN_ROOT/hooks/hook.mjs\"", "commandWindows": "node -e \"import(require('url').pathToFileURL(require('path').join(process.env.PLUGIN_ROOT,'hooks','hook.mjs')).href)\"", "timeout": 300, "statusMessage": "acfs: merge" }] }
+      { "hooks": [{ "type": "command", "command": "node \"$PLUGIN_ROOT/hooks/hook.mjs\"", "commandWindows": "node -e \"import(require('url').pathToFileURL(require('path').join(process.env.PLUGIN_ROOT,'hooks','hook.mjs')).href)\"", "timeout": 300, "statusMessage": "tracefs: merge" }] }
     ]
   }
 }

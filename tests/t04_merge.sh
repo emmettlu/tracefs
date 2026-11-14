@@ -1,5 +1,5 @@
 #!/bin/bash
-# Merging processes into main (acfs proc merge, exit): concurrency, text merge, conflicts,
+# Merging processes into main (tracefs proc merge, exit): concurrency, text merge, conflicts,
 # resolutions, the resolver, updates of a running process, session labels.
 . "$(dirname "$0")/lib.sh"
 setup
@@ -133,7 +133,7 @@ U2=$(spawn); V2=$(spawn)
 x $U2 "sed -i 's/^70\$/u/' shared.txt"; x $V2 "sed -i 's/^70\$/v/' shared.txt"
 afs proc merge $V2 >/dev/null
 rc=$(quit $U2)
-ok 4.9 "acfs run of a process that exits with a conflict still returns its status" test "$rc" = 0
+ok 4.9 "tracefs run of a process that exits with a conflict still returns its status" test "$rc" = 0
 ok 4.9a "it is conflicted and keeps its branch, main is unchanged" bash -c "
 	[ \$(pstate $U2) = conflicted ] && [ -d $STATE/branches/\$(branch $U2 w) ] && grep -qx v $W/shared.txt"
 ok 4.9b "merge again: still a conflict (exit 2)" bash -c "[ \$(fin $U2 --no-resolver) = 2 ]"

@@ -50,8 +50,8 @@ ok 13.6a "--base: other paths go through" bash -c "printf z | afs fs write w src
 bad 13.7 "a path leaving the workspace is refused" afs fs cat w ../etc/passwd
 afs fs ln w /etc esc >/dev/null
 bad 13.7a "reads do not follow a symlink below the root" afs fs cat w esc/passwd
-bad 13.7b "writes do not either" bash -c "printf x | afs fs write w esc/acfs-evil"
-ok 13.7c "nothing was written outside" test ! -e /etc/acfs-evil
+bad 13.7b "writes do not either" bash -c "printf x | afs fs write w esc/tracefs-evil"
+ok 13.7c "nothing was written outside" test ! -e /etc/tracefs-evil
 bad 13.7d "deleting a missing path fails" afs fs rm w nope
 bad 13.7e "the root cannot be removed" afs fs rm w /
 
@@ -67,11 +67,11 @@ I0=$(stat -c %i $W/src/f1.txt)
 printf new | afs fs write w src/f1.txt >/dev/null
 ok 13.9a "rewriting a file keeps its inode (later merges still follow it)" bash -c "[ \$(stat -c %i $W/src/f1.txt) = $I0 ] && [ \"\$(cat $W/src/f1.txt)\" = new ]"
 
-mkdir -p $T/bin && cp "$BIN/acfs" $T/bin/ && chmod 755 $T/bin $T/bin/acfs
+mkdir -p $T/bin && cp "$BIN/tracefs" $T/bin/ && chmod 755 $T/bin $T/bin/tracefs
 as() {
 	local u=$1
 	shift
-	setpriv --reuid=$u --regid=$u --clear-groups $T/bin/acfs --socket "$SOCK" "$@"
+	setpriv --reuid=$u --regid=$u --clear-groups $T/bin/tracefs --socket "$SOCK" "$@"
 }
 export -f as
 ok 13.10 "another uid cannot read the workspace: not found" bash -c "! as 60001 fs cat w README.md >$T/as.out 2>&1 && grep -q 'not found' $T/as.out"

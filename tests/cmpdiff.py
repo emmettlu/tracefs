@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Compare `acfs diff` output with a ground truth computed from two fingerprints.
+"""Compare `tracefs diff` output with a ground truth computed from two fingerprints.
 
 usage: cmpdiff.py FP_BEFORE FP_AFTER DIFF_JSON [WS]
 Fingerprint lines are "<repr(path)> <mode> <uid:gid> <hash/target> <xattrs>".

@@ -25,7 +25,7 @@ export interface CheckpointOptions {
 }
 
 export interface Backend {
-  readonly kind: "acfsd" | "portable";
+  readonly kind: "tracefsd" | "portable";
   describe(): string;
   checkpoint(message: string, options?: CheckpointOptions): Promise<string | undefined>;
   diff(a: string, b?: string | null): Promise<Change[]>;
@@ -38,7 +38,7 @@ export interface Backend {
 }
 
 export declare class DaemonBackend implements Backend {
-  readonly kind: "acfsd";
+  readonly kind: "tracefsd";
   proc: string;
   socket: string;
   constructor(proc: string, socket?: string);
@@ -115,10 +115,10 @@ export declare class Store {
   prune(ws: string, keep?: number): number;
 }
 
-export declare class AcfsLiteError extends Error {
+export declare class TracefsLiteError extends Error {
   code: string;
 }
-export declare class AcfsError extends Error {
+export declare class TracefsError extends Error {
   code: string;
 }
 export declare const META: string;

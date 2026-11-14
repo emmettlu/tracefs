@@ -1,12 +1,12 @@
 import fs from "node:fs";
 import { connect } from "node:net";
 
-export const DEFAULT_SOCKET = "/run/acfs/acfs-daemon.sock";
+export const DEFAULT_SOCKET = "/run/tracefs/tracefs-daemon.sock";
 
-export class AcfsError extends Error {
+export class TracefsError extends Error {
   constructor(code, message) {
     super(message);
-    this.name = "AcfsError";
+    this.name = "TracefsError";
     this.code = code;
   }
 }
@@ -23,11 +23,11 @@ export function call(socket, op, args) {
       try {
         r = JSON.parse(Buffer.concat(chunks).toString("utf8").split("\n")[0]);
       } catch (e) {
-        reject(new AcfsError("invalid", `bad response: ${e}`));
+        reject(new TracefsError("invalid", `bad response: ${e}`));
         return;
       }
       if (r.ok) resolve(r.result);
-      else reject(new AcfsError(r.error?.code ?? "internal", r.error?.message ?? "unknown error"));
+      else reject(new TracefsError(r.error?.code ?? "internal", r.error?.message ?? "unknown error"));
     });
   });
 }
@@ -37,7 +37,7 @@ export function pathName(p) {
 }
 
 export class DaemonBackend {
-  kind = "acfsd";
+  kind = "tracefsd";
 
   constructor(proc, socket = DEFAULT_SOCKET) {
     this.proc = proc;
@@ -45,8 +45,8 @@ export class DaemonBackend {
   }
 
   static available(env = process.env) {
-    const socket = env.ACFS_SOCKET ?? DEFAULT_SOCKET;
-    return Boolean(env.ACFS_PROC) && process.platform === "linux" && fs.existsSync(socket) ? socket : null;
+    const socket = env.TRACEFS_SOCKET ?? DEFAULT_SOCKET;
+    return Boolean(env.TRACEFS_PROC) && process.platform === "linux" && fs.existsSync(socket) ? socket : null;
   }
 
   call(op, args) {
@@ -54,7 +54,7 @@ export class DaemonBackend {
   }
 
   describe() {
-    return `acfs ${this.proc}`;
+    return `tracefs ${this.proc}`;
   }
 
   async checkpoint(message, { toolCall = null, since = null, author = "agent" } = {}) {
@@ -97,6 +97,6 @@ export class DaemonBackend {
   async status() {
     const p = await this.call("proc.show", { proc_id: this.proc });
     const brs = p.branches.map((b) => `${b.ws} (${b.state})`).join(", ");
-    return `acfs: process ${p.id}, ${p.state}; branches ${brs || "none"}`;
+    return `tracefs: process ${p.id}, ${p.state}; branches ${brs || "none"}`;
   }
 }

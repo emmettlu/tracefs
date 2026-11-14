@@ -13,7 +13,7 @@ function cli(env, ...args) {
   return { code: r.status, out: r.stdout.trim(), err: r.stderr.trim() };
 }
 
-test("the acfs-lite command covers the workflow", (t) => {
+test("the tracefs-lite command covers the workflow", (t) => {
   const root = tmp();
   const src = tmp();
   t.after(() => {
@@ -21,7 +21,7 @@ test("the acfs-lite command covers the workflow", (t) => {
     fs.rmSync(src, { recursive: true, force: true });
   });
   write(src, "a.txt", "v0\n");
-  const env = { ACFS_LITE_ROOT: root };
+  const env = { TRACEFS_LITE_ROOT: root };
   assert.match(cli(env, "init").out, /^dir /);
   const main = cli(env, "register", "app", src).out;
   assert.equal(fs.readFileSync(path.join(main, "a.txt"), "utf8"), "v0\n");
@@ -31,7 +31,7 @@ test("the acfs-lite command covers the workflow", (t) => {
   const c = cli(env, "checkpoint", br, "-m", "edit").out;
   assert.match(c, /^c\d+$/);
   assert.equal(cli(env, "checkpoint", br).out, "unchanged");
-  assert.match(cli(env, "log", "app", "--branch", "b1").out, new RegExp(`^${c} app/b1 acfs-lite edit`));
+  assert.match(cli(env, "log", "app", "--branch", "b1").out, new RegExp(`^${c} app/b1 tracefs-lite edit`));
   assert.equal(cli(env, "diff", c).out, "no changes");
   assert.match(cli(env, "merge", "app", "b1").out, /^merged c\d+/);
   assert.equal(fs.readFileSync(path.join(main, "a.txt"), "utf8"), "v1\n");

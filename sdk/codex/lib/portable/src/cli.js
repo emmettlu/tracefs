@@ -4,7 +4,7 @@ import { parseArgs } from "node:util";
 import { detach, ensure, readState } from "./image.js";
 import { Store } from "./store.js";
 
-const USAGE = `usage: acfs-lite <command> [args]
+const USAGE = `usage: tracefs-lite <command> [args]
 
   init [--size 64g]                  create and mount the store (macOS: APFS image, Linux: btrfs or a btrfs image, Windows: NTFS VHDX)
   status                             where the store is and its workspaces
@@ -62,13 +62,13 @@ try {
   else if (cmd === "branch") out(store().branch(args[0], args[1]));
   else if (cmd === "drop") store().dropBranch(args[0], args[1]);
   else if (cmd === "merge") {
-    const r = store().merge(args[0], args[1], { prefer: opt.prefer ?? null, author: "acfs-lite" });
+    const r = store().merge(args[0], args[1], { prefer: opt.prefer ?? null, author: "tracefs-lite" });
     out(opt.json ? r : [r.status + (r.changeset ? ` ${r.changeset}` : ""), ...r.conflicts.map((c) => `conflict: ${c.path} (${c.reason})`)].join("\n"));
     if (r.status === "conflict") process.exitCode = 2;
   } else if (cmd === "checkpoint") {
     const found = Store.find(args[0] ?? process.cwd());
-    if (!found) throw new Error(`${args[0] ?? process.cwd()} is not in an acfs-lite tree`);
-    out(found.store.checkpoint(found.ws, found.tree, { author: "acfs-lite", message: opt.message ?? "" }) ?? "unchanged");
+    if (!found) throw new Error(`${args[0] ?? process.cwd()} is not in an tracefs-lite tree`);
+    out(found.store.checkpoint(found.ws, found.tree, { author: "tracefs-lite", message: opt.message ?? "" }) ?? "unchanged");
   } else if (cmd === "log") {
     const log = store().log({ ws: args[0] ?? null, tree: opt.branch ?? null, n: Number(opt.n ?? 20) });
     out(opt.json ? log : log.map((c) => `${c.id} ${c.ws}/${c.tree} ${c.author} ${c.message}${c.pruned ? " (pruned)" : ""}`).join("\n"));
@@ -86,6 +86,6 @@ try {
     process.exitCode = 64;
   }
 } catch (e) {
-  process.stderr.write(`acfs-lite: ${e.message}\n`);
+  process.stderr.write(`tracefs-lite: ${e.message}\n`);
   process.exitCode = 1;
 }

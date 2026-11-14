@@ -4,12 +4,12 @@
 . "$(dirname "$0")/lib.sh"
 setup
 # The binary must be reachable by any uid (the build may sit in a private home).
-mkdir -p $T/bin $T/ag && cp "$BIN/acfs" $T/bin/ && chmod 755 $T/bin $T/bin/acfs && chmod 777 $T/ag
+mkdir -p $T/bin $T/ag && cp "$BIN/tracefs" $T/bin/ && chmod 755 $T/bin $T/bin/tracefs && chmod 777 $T/ag
 stop_daemon
 start_daemon --max-user-sessions 3
 
 UA=60001 UB=60002
-as() { local u=$1; shift; (cd / && setpriv --reuid=$u --regid=$u --clear-groups $T/bin/acfs --socket "$SOCK" "$@"); }
+as() { local u=$1; shift; (cd / && setpriv --reuid=$u --regid=$u --clear-groups $T/bin/tracefs --socket "$SOCK" "$@"); }
 says() { local p=$1; shift; ! "$@" >$T/says.out 2>&1 && grep -q "$p" $T/says.out; } # fails, saying p
 gone() { says 'not found' "$@"; }                                                     # refused as if absent
 mine() { local d=$T/src/$1; mkdir -p "$d" && echo "$1" >"$d/README" && chown -R $2:$2 "$d" && echo "$d"; }
@@ -39,7 +39,7 @@ ok 9.4a "merge of another user's session: not found" gone as $UB session merge $
 ok 9.4b "discard of another user's session: not found" gone as $UB session discard $SA
 ok 9.4c "a process may not branch another user's workspace: not found" gone as $UB run --ws wa -- true
 
-as $UA run -- sh -c "echo \$ACFS_PROC >$T/ag/pa.id; echo x >$WA/from-a; while [ ! -e $T/ag/pa.stop ]; do sleep 0.2; done" >/dev/null 2>&1 &
+as $UA run -- sh -c "echo \$TRACEFS_PROC >$T/ag/pa.id; echo x >$WA/from-a; while [ ! -e $T/ag/pa.stop ]; do sleep 0.2; done" >/dev/null 2>&1 &
 for _ in $(seq 1 100); do [ -s $T/ag/pa.id ] && break; sleep 0.05; done
 PA=$(cat $T/ag/pa.id)
 ok 9.5 "a user runs a process over its own workspaces only" test "$(afs proc show $PA | j "[b['ws'] for b in d['branches']]")" = "['wa', 'wa2']"

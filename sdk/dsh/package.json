@@ -1,7 +1,7 @@
 {
-  "name": "dsh-acfs",
+  "name": "dsh-tracefs",
   "version": "0.1.0",
-  "description": "DeepSeek Harness bundle: acfs changesets for every tool call that writes, undo, and a merge when a turn ends; on acfsd (acfs run) or an acfs-lite store (macOS, Windows, any Linux)",
+  "description": "DeepSeek Harness bundle: tracefs changesets for every tool call that writes, undo, and a merge when a turn ends; on tracefsd (tracefs run) or an tracefs-lite store (macOS, Windows, any Linux)",
   "type": "module",
   "license": "MIT",
   "main": "index.js",
@@ -41,7 +41,7 @@
   "keywords": [
     "dsh",
     "dsh-plugin",
-    "acfs",
+    "tracefs",
     "versioning",
     "undo",
     "checkpoint",

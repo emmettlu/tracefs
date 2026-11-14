@@ -6,7 +6,7 @@ import { Store } from "../index.js";
 
 export const WIN = process.platform === "win32";
 
-export function tmp(prefix = "acfs-lite-test-") {
+export function tmp(prefix = "tracefs-lite-test-") {
   return fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), prefix)));
 }
 

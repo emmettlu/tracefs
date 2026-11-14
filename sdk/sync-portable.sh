@@ -1,5 +1,5 @@
 #!/bin/sh
-# Copy acfs-portable into the plugins that are installed on their own (Codex copies a plugin directory, dsh installs sdk/dsh from Git
+# Copy tracefs-portable into the plugins that are installed on their own (Codex copies a plugin directory, dsh installs sdk/dsh from Git
 # or npm), so none of them imports ../portable. Run after changing sdk/portable; the plugins' tests fail while a copy differs.
 set -eu
 sdk=$(cd "$(dirname "$0")" && pwd)

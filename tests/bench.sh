@@ -1,11 +1,11 @@
 #!/bin/bash
-# Benchmarks of acfs itself (AGENTS.md 8); run through run.sh: sudo bash tests/run.sh bench
+# Benchmarks of tracefs itself (AGENTS.md 8); run through run.sh: sudo bash tests/run.sh bench
 # Writes a Markdown table to tests/out/bench.md. Data stays on disk ($TROOT).
 . "$(dirname "$0")/lib.sh"
 setup 32G
 MD=${BENCH_MD:-$(dirname "$(readlink -f "$0")")/out/bench.md}
 restart() { stop_daemon; DIFF_ENV=$1 start_daemon "${@:2}"; }
-restart ACFS_BENCH=1
+restart TRACEFS_BENCH=1
 ROWS=()
 row() { ROWS+=("| $1 | $2 |"); res "$1" INFO "$2"; }
 us() { echo $(($(date +%s%N) / 1000)); }
@@ -34,7 +34,7 @@ afs ws register rg --from $RG >/dev/null
 SM=$(mkws small) && afs ws register small --from $SM >/dev/null
 t0=$(us)
 P=$(spawn --ws big --ws rg --ws small)
-row "acfs run until the command starts, 3 workspaces" "$(show $(($(us) - t0))) ms"
+row "tracefs run until the command starts, 3 workspaces" "$(show $(($(us) - t0))) ms"
 PB=$RUN/mnt/$(branch $P big)
 for d in $(seq 1 4); do for f in $(seq 1 2500); do echo x >>$PB/d$d/f$f; done; done
 t afs proc changeset $P --author b -m 10k >/dev/null
@@ -43,9 +43,9 @@ row "proc changeset, 10k changed files (pause)" "$(j "round(d['pause_ms'], 1)" <
 for f in $(seq 1 10); do echo y >>$PB/d9/f$f; done
 CS2=$(afs proc changeset $P --author b -m 10 | j "d['changeset']")
 d1=$(t afs diff $CS1) d2=$(t afs diff $CS2)
-restart ACFS_DIFF_V1=1
+restart TRACEFS_DIFF_V1=1
 v1=$(t afs diff $CS1) v2=$(t afs diff $CS2)
-restart ACFS_BENCH=1
+restart TRACEFS_BENCH=1
 row "diff of the 10k-file changeset (v2 / v1)" "$d1 / $v1 ms"
 row "diff of a 10-file changeset after it (v2 / v1)" "$d2 / $v2 ms"
 row "proc merge: 10k changed files into main" "$(t afs proc merge $P) ms"
@@ -62,9 +62,9 @@ afs changeset hist -m history >/dev/null
 echo w >>$L/d1/f1
 c2=$(t afs changeset hist -m one)
 echo w >>$L/d1/f2
-restart ACFS_DIFF_V1=1
+restart TRACEFS_DIFF_V1=1
 c1=$(t afs changeset hist -m one)
-restart ACFS_BENCH=1
+restart TRACEFS_BENCH=1
 row "changeset of 1 write after 5k recorded changes (v2 / v1)" "$c2 / $c1 ms"
 
 # File access without a mount, 50 calls each (each is a CLI process).
@@ -83,7 +83,7 @@ fsw() { i=$((i + 1)); echo $i | afs fs write "$1" bench/f$i; }
 row "fs write (mean of 50)" "$(avg 50 fsw hist) ms"
 
 {
-	echo "# acfs benchmarks"
+	echo "# tracefs benchmarks"
 	echo
 	echo "$(uname -r), $(nproc) CPUs, $(free -g | awk '/Mem/{print $2}') GiB, state on a loop btrfs image; $(date -u +%F)."
 	echo

@@ -1,16 +1,16 @@
 # Maintainer: emmettlu
 #
-# acfs: the agent versioned filesystem daemon (acfsd) and its CLI (acfs). Built from the commit this
+# tracefs: the agent versioned filesystem daemon (tracefsd) and its CLI (tracefs). Built from the commit this
 # PKGBUILD belongs to (`git archive HEAD` of this repository), so `makepkg` here packages exactly what is
 # committed.
 #
 # Installed layout:
-#   /usr/bin/acfsd, /usr/bin/acfs
-#   /usr/lib/systemd/system/acfsd.service                 not enabled by the package
-#   /usr/lib/systemd/system/acfs.slice.d/limits.conf      caps for the processes `acfs run` starts
-#   /usr/lib/tmpfiles.d/acfs.conf                         /var/lib/acfs: a btrfs subvolume where it can be
+#   /usr/bin/tracefsd, /usr/bin/tracefs
+#   /usr/lib/systemd/system/tracefsd.service                 not enabled by the package
+#   /usr/lib/systemd/system/tracefs.slice.d/limits.conf      caps for the processes `tracefs run` starts
+#   /usr/lib/tmpfiles.d/tracefs.conf                         /var/lib/tracefs: a btrfs subvolume where it can be
 
-pkgname=acfs
+pkgname=tracefs
 pkgver=0.0.0
 pkgrel=1
 pkgdesc='AgentComputerFS: versioned filesystem for agents (snapshot, branch, merge, rollback)'
@@ -19,7 +19,7 @@ url='https://github.com/emmettlu/tracefs'
 license=('MIT')
 # kernel >= 6.8 with btrfs, overlayfs and loop; the state dir falls back to a loop btrfs image off btrfs
 depends=('glibc' 'gcc-libs' 'systemd' 'btrfs-progs' 'git' 'coreutils' 'diffutils')
-optdepends=('nodejs: acfs-lite and the pi / dsh plugins' 'udisks2: acfs-lite btrfs image without root')
+optdepends=('nodejs: tracefs-lite and the pi / dsh plugins' 'udisks2: tracefs-lite btrfs image without root')
 makedepends=('rust' 'git')
 options=('!lto' '!debug')
 source=()
@@ -44,47 +44,47 @@ pkgver() {
 }
 
 prepare() {
-  rm -rf -- "${srcdir}/acfs"
-  mkdir -p -- "${srcdir}/acfs"
-  git -c safe.directory='*' -C "$(_repo)" archive --format=tar HEAD | tar -x -C "${srcdir}/acfs"
+  rm -rf -- "${srcdir}/tracefs"
+  mkdir -p -- "${srcdir}/tracefs"
+  git -c safe.directory='*' -C "$(_repo)" archive --format=tar HEAD | tar -x -C "${srcdir}/tracefs"
 }
 
 build() {
-  cd "${srcdir}/acfs"
+  cd "${srcdir}/tracefs"
   export CARGO_TARGET_DIR="${srcdir}/target"
   # panic messages carry source paths: not the build directory's
-  export RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=${srcdir}=/usr/src/acfs"
-  cargo build --locked --release -p acfsd -p acfs
+  export RUSTFLAGS="${RUSTFLAGS:-} --remap-path-prefix=${srcdir}=/usr/src/tracefs"
+  cargo build --locked --release -p tracefsd -p tracefs
 }
 
 check() {
   # unit tests only: the integration tests (tests/run.sh) need root, btrfs and systemd
-  cd "${srcdir}/acfs"
+  cd "${srcdir}/tracefs"
   CARGO_TARGET_DIR="${srcdir}/target" cargo test --locked --release
 }
 
 package() {
-  cd "${srcdir}/acfs"
-  install -Dm755 -t "${pkgdir}/usr/bin" "${srcdir}/target/release/acfsd" "${srcdir}/target/release/acfs"
+  cd "${srcdir}/tracefs"
+  install -Dm755 -t "${pkgdir}/usr/bin" "${srcdir}/target/release/tracefsd" "${srcdir}/target/release/tracefs"
   # deploy/ is for `install.sh` into /usr/local; the package puts the binaries in /usr/bin
-  sed 's|^ExecStart=/usr/local/bin/acfsd$|ExecStart=/usr/bin/acfsd|' deploy/acfsd.service |
-    install -Dm644 /dev/stdin "${pkgdir}/usr/lib/systemd/system/acfsd.service"
-  grep -qx 'ExecStart=/usr/bin/acfsd' "${pkgdir}/usr/lib/systemd/system/acfsd.service"
-  install -Dm644 deploy/acfs-slice-limits.conf "${pkgdir}/usr/lib/systemd/system/acfs.slice.d/limits.conf"
+  sed 's|^ExecStart=/usr/local/bin/tracefsd$|ExecStart=/usr/bin/tracefsd|' deploy/tracefsd.service |
+    install -Dm644 /dev/stdin "${pkgdir}/usr/lib/systemd/system/tracefsd.service"
+  grep -qx 'ExecStart=/usr/bin/tracefsd' "${pkgdir}/usr/lib/systemd/system/tracefsd.service"
+  install -Dm644 deploy/tracefs-slice-limits.conf "${pkgdir}/usr/lib/systemd/system/tracefs.slice.d/limits.conf"
   # the state dir as its own btrfs subvolume (kept out of root snapshots) when / is btrfs, else a directory
-  install -Dm644 /dev/stdin "${pkgdir}/usr/lib/tmpfiles.d/acfs.conf" <<'EOF'
-v /var/lib/acfs 0700 root root -
+  install -Dm644 /dev/stdin "${pkgdir}/usr/lib/tmpfiles.d/tracefs.conf" <<'EOF'
+v /var/lib/tracefs 0700 root root -
 EOF
-  # the pi extension (checkpoints every tool call of pi under acfs run, merges when a prompt settles) and the TypeScript client it imports,
-  # as sources: pi loads TypeScript itself (`pi -e /usr/share/acfs/sdk/pi/index.ts`)
-  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/pi" sdk/pi/index.ts sdk/pi/package.json
-  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/typescript/src" sdk/typescript/src/index.ts sdk/typescript/src/protocol.ts
-  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/portable" sdk/portable/index.js sdk/portable/index.d.ts sdk/portable/package.json
-  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/portable/src" sdk/portable/src/*.js
-  chmod 755 "${pkgdir}/usr/share/acfs/sdk/portable/src/cli.js"
+  # the pi extension (checkpoints every tool call of pi under tracefs run, merges when a prompt settles) and the TypeScript client it imports,
+  # as sources: pi loads TypeScript itself (`pi -e /usr/share/tracefs/sdk/pi/index.ts`)
+  install -Dm644 -t "${pkgdir}/usr/share/tracefs/sdk/pi" sdk/pi/index.ts sdk/pi/package.json
+  install -Dm644 -t "${pkgdir}/usr/share/tracefs/sdk/typescript/src" sdk/typescript/src/index.ts sdk/typescript/src/protocol.ts
+  install -Dm644 -t "${pkgdir}/usr/share/tracefs/sdk/portable" sdk/portable/index.js sdk/portable/index.d.ts sdk/portable/package.json
+  install -Dm644 -t "${pkgdir}/usr/share/tracefs/sdk/portable/src" sdk/portable/src/*.js
+  chmod 755 "${pkgdir}/usr/share/tracefs/sdk/portable/src/cli.js"
   install -d "${pkgdir}/usr/bin"
-  ln -s ../share/acfs/sdk/portable/src/cli.js "${pkgdir}/usr/bin/acfs-lite"
-  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/dsh" sdk/dsh/index.js sdk/dsh/package.json sdk/dsh/cordis.patch.yml
-  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/dsh/lib/portable" sdk/dsh/lib/portable/index.js sdk/dsh/lib/portable/index.d.ts sdk/dsh/lib/portable/package.json
-  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/dsh/lib/portable/src" sdk/dsh/lib/portable/src/*.js
+  ln -s ../share/tracefs/sdk/portable/src/cli.js "${pkgdir}/usr/bin/tracefs-lite"
+  install -Dm644 -t "${pkgdir}/usr/share/tracefs/sdk/dsh" sdk/dsh/index.js sdk/dsh/package.json sdk/dsh/cordis.patch.yml
+  install -Dm644 -t "${pkgdir}/usr/share/tracefs/sdk/dsh/lib/portable" sdk/dsh/lib/portable/index.js sdk/dsh/lib/portable/index.d.ts sdk/dsh/lib/portable/package.json
+  install -Dm644 -t "${pkgdir}/usr/share/tracefs/sdk/dsh/lib/portable/src" sdk/dsh/lib/portable/src/*.js
 }

@@ -1,7 +1,7 @@
 {
-  "name": "@dopamine-org/acfs",
+  "name": "@dopamine-org/tracefs",
   "version": "0.2.0",
-  "description": "Client for the acfs-daemon socket protocol",
+  "description": "Client for the tracefs-daemon socket protocol",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/emmettlu/tracefs.git",

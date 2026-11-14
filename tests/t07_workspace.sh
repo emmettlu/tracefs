@@ -26,7 +26,7 @@ fp $W >$T/fp.before
 afs ws register lv --from $W >/dev/null
 ok 7.1 "register mounts an overlay over the directory" mounted $W
 ok 7.1a "content unchanged through the mount" bash -c "fp $W | diff $T/fp.before -"
-ok 7.1b "original content set aside and removed" bash -c "! ls -A $T/src | grep -q acfs"
+ok 7.1b "original content set aside and removed" bash -c "! ls -A $T/src | grep -q tracefs"
 ok 7.1c "ws list reports it attached" bash -c "[ \$(wsf lv live) = True ]"
 bad 7.1d "path inside a workspace rejected" afs ws register lvsub --from $W/src
 bad 7.1e "same path twice rejected" afs ws register lv2 --from $W
@@ -177,7 +177,7 @@ bad 7.16b "detach refused while a session labels the workspace" afs ws detach lv
 afs session merge $S5 >/dev/null
 ok 7.16c "detach" afs ws detach lv
 ok 7.16d "the directory is plain again and holds the head" bash -c "! findmnt --mountpoint $W >/dev/null && fp $W | diff $T/fp.head -"
-ok 7.16e "no staging leftovers" bash -c "! ls -A $T/src | grep -q acfs"
+ok 7.16e "no staging leftovers" bash -c "! ls -A $T/src | grep -q tracefs"
 N=$(ncs lv)
 echo gone >$W/gone.txt
 sleep 1.5
@@ -194,9 +194,9 @@ kill $ST
 wait $ST 2>/dev/null
 
 stop_daemon
-export ACFS_FAILPOINT=merge-before-snapshot
+export TRACEFS_FAILPOINT=merge-before-snapshot
 start_daemon "${DARGS[@]}"
-unset ACFS_FAILPOINT
+unset TRACEFS_FAILPOINT
 H=$(wsf lv2 head_snap)
 echo x >$W2/fp.txt
 settle lv2
@@ -204,6 +204,6 @@ afs reset $H >/dev/null 2>&1 # the daemon aborts after writing, before the snaps
 sleep 0.5
 start_daemon "${DARGS[@]}"
 ok 7.18 "an interrupted reset is recorded on restart with its undo hint" bash -c "
-	afs log --ws lv2 -n 1 | j \"d[0]['message']\" | grep -q \"interrupted merge; acfs reset\" && [ ! -e $W2/fp.txt ]"
+	afs log --ws lv2 -n 1 | j \"d[0]['message']\" | grep -q \"interrupted merge; tracefs reset\" && [ ! -e $W2/fp.txt ]"
 
 finish_test

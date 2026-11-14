@@ -3,7 +3,7 @@
 # Results: tests/out/<name>.out, summary in tests/out/summary, guard trips in tests/out/GUARD.
 #
 # Host safety: test state is on disk ($TROOT), each test runs in a scope capped at
-# AFST_MEM_MAX, acfs run processes run in afstest.slice with the same cap (tmpfs pages count
+# AFST_MEM_MAX, tracefs run processes run in afstest.slice with the same cap (tmpfs pages count
 # against these caps too), and guard.sh reaps everything when host RAM, tmpfs, disk
 # or memory pressure crosses its thresholds.
 set -u
@@ -17,7 +17,7 @@ tests=${*:-$(ls t[0-9]*.sh)}
 : >"$OUT/summary"
 rm -f "$OUT/GUARD"
 
-# Cap for the processes acfsd starts under --slice afstest.
+# Cap for the processes tracefsd starts under --slice afstest.
 mkdir -p /run/systemd/system
 printf '[Slice]\nMemoryMax=%s\nMemorySwapMax=0\nTasksMax=8192\nCPUWeight=50\nIOWeight=50\n' "$MEM_MAX" >/run/systemd/system/afstest.slice
 systemctl daemon-reload

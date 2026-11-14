@@ -1,6 +1,6 @@
 #!/bin/bash
-# dsh-acfs in a real DeepSeek Harness: the headless profile with this plugin, its scripted mock model calling bash in an
-# acfs-lite branch. Checks the changeset of the tool call and the merge into main when the turn ends.
+# dsh-tracefs in a real DeepSeek Harness: the headless profile with this plugin, its scripted mock model calling bash in an
+# tracefs-lite branch. Checks the changeset of the tool call and the merge into main when the turn ends.
 #   DSH_SOURCE=<built deepseek-harness checkout> bash sdk/dsh/test/e2e.sh
 set -euo pipefail
 
@@ -9,7 +9,7 @@ dsh=${DSH_SOURCE:?set DSH_SOURCE to a built deepseek-harness checkout}
 cli=$here/../../portable/src/cli.js
 port=${PORT:-8765}
 work=$(mktemp -d)
-export ACFS_LITE_ROOT=$work/store
+export TRACEFS_LITE_ROOT=$work/store
 mock=
 cleanup() {
 	[ -n "$mock" ] && kill "$mock" 2>/dev/null || true
@@ -21,7 +21,7 @@ node "$cli" register app >/dev/null
 branch=$(node "$cli" branch app agent)
 cat >"$work/overlay.yml" <<EOF
 - insert:
-    - id: acfs
+    - id: tracefs
       name: '$here/../index.js'
 EOF
 
@@ -48,7 +48,7 @@ check "the bash call ran" 'grep -q "\"type\":\"tool_result\",\"callId\":\"mock-c
 check "it wrote the branch" '[ "$(cat "$branch/hello.txt" 2>/dev/null)" = hi ]'
 log=$(node "$cli" log app)
 check "its changeset is the dsh bash call" 'grep -q "app/agent dsh bash: echo hi > hello.txt" <<<"$log"'
-check "the turn end merged it into main" 'grep -q "app/main dsh merge agent" <<<"$log" && [ "$(cat "$ACFS_LITE_ROOT/trees/app/main/hello.txt" 2>/dev/null)" = hi ]'
+check "the turn end merged it into main" 'grep -q "app/main dsh merge agent" <<<"$log" && [ "$(cat "$TRACEFS_LITE_ROOT/trees/app/main/hello.txt" 2>/dev/null)" = hi ]'
 check "the changeset carries the tool call id" 'node "$cli" log app --json | grep -q "\"tool_call\": \"mock-call-1\""'
 if [ $fail != 0 ]; then
 	echo "--- log"; echo "$log"; echo "--- dsh stderr"; tail -c 3000 "$work/dsh.err"; echo "--- dsh events"; tail -c 3000 "$work/dsh.out"

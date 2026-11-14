@@ -1,8 +1,8 @@
 {
-  "name": "@dopamine-org/acfs-pi",
+  "name": "@dopamine-org/tracefs-pi",
   "version": "0.1.0",
   "private": true,
-  "description": "pi extension: acfs checkpoints for every tool call, undo, /tree and /fork restore, merged when a prompt settles; on acfsd (acfs run) or an acfs-lite store (macOS, Windows, any Linux)",
+  "description": "pi extension: tracefs checkpoints for every tool call, undo, /tree and /fork restore, merged when a prompt settles; on tracefsd (tracefs run) or an tracefs-lite store (macOS, Windows, any Linux)",
   "type": "module",
   "pi": {
     "extensions": [
@@ -12,7 +12,7 @@
   "scripts": {
     "check": "tsc",
     "test": "node test-portable.ts",
-    "test:acfsd": "node test.ts"
+    "test:tracefsd": "node test.ts"
   },
   "peerDependencies": {
     "@earendil-works/pi-coding-agent": "*"

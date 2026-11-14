@@ -28,38 +28,38 @@ jobs:
       - name: btrfs-progs (Linux image tests)
         if: runner.os == 'Linux'
         run: sudo apt-get update -q && sudo apt-get install -yq btrfs-progs
-      - name: acfs-portable
+      - name: tracefs-portable
         working-directory: sdk/portable
         run: node --test "test/*.test.js"
-      - name: acfs-portable btrfs image as root (Linux)
+      - name: tracefs-portable btrfs image as root (Linux)
         if: runner.os == 'Linux'
         working-directory: sdk/portable
-        run: sudo env "PATH=$PATH" ACFS_LITE_TEST_DIR=/var/tmp node --test --test-name-pattern=btrfs "test/image.test.js"
-      - name: acfs-portable on a btrfs volume (Linux)
+        run: sudo env "PATH=$PATH" TRACEFS_LITE_TEST_DIR=/var/tmp node --test --test-name-pattern=btrfs "test/image.test.js"
+      - name: tracefs-portable on a btrfs volume (Linux)
         if: runner.os == 'Linux' && !cancelled()
         working-directory: sdk/portable
         run: |
           truncate -s 4G "$RUNNER_TEMP/b.img" && mkfs.btrfs -q "$RUNNER_TEMP/b.img"
           sudo mkdir -p /mnt/b && sudo mount -o loop "$RUNNER_TEMP/b.img" /mnt/b && sudo chown "$USER" /mnt/b
           TMPDIR=/mnt/b node --test "test/*.test.js"
-      - name: dsh-acfs
+      - name: dsh-tracefs
         if: ${{ !cancelled() }}
         working-directory: sdk/dsh
         run: node --test "test/*.test.js"
-      - name: acfs Codex plugin
+      - name: tracefs Codex plugin
         if: ${{ !cancelled() }}
         working-directory: sdk/codex
         run: node --test "test/*.test.js"
-      - name: acfs-pi install
+      - name: tracefs-pi install
         id: piinstall
         if: ${{ !cancelled() }}
         working-directory: sdk/pi
         run: npm install --no-audit --no-fund
-      - name: acfs-pi typecheck
+      - name: tracefs-pi typecheck
         if: ${{ !cancelled() && steps.piinstall.outcome == 'success' }}
         working-directory: sdk/pi
         run: npx tsc -p .
-      - name: acfs-pi on pi with a faux model
+      - name: tracefs-pi on pi with a faux model
         if: ${{ !cancelled() && steps.piinstall.outcome == 'success' }}
         working-directory: sdk/pi
         run: node test-portable.ts
@@ -87,12 +87,12 @@ jobs:
       - name: test (workspace)
         if: runner.os == 'Linux' && !cancelled()
         run: cargo test
-      - name: test (acfs-core)
+      - name: test (tracefs-core)
         if: runner.os != 'Linux'
-        run: cargo test -p acfs-core
+        run: cargo test -p tracefs-core
 
   integration:
-    name: acfsd integration (Linux, root, btrfs)
+    name: tracefsd integration (Linux, root, btrfs)
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
@@ -107,20 +107,20 @@ jobs:
         run: sudo bash tests/setup-host.sh
       - name: copy where the agent uid can reach it
         run: |
-          sudo rsync -a --exclude target --exclude .git ./ /opt/acfs-src/
-          sudo install -Dm755 -t /opt/acfs-src/target/release target/release/acfsd target/release/acfs
+          sudo rsync -a --exclude target --exclude .git ./ /opt/tracefs-src/
+          sudo install -Dm755 -t /opt/tracefs-src/target/release target/release/tracefsd target/release/tracefs
       - name: integration tests
-        run: sudo env SRC=/opt/acfs-src BIN=/opt/acfs-src/target/release bash /opt/acfs-src/tests/run.sh
+        run: sudo env SRC=/opt/tracefs-src BIN=/opt/tracefs-src/target/release bash /opt/tracefs-src/tests/run.sh
       - name: results
         run: |
-          cat /opt/acfs-src/tests/out/summary
-          grep -h '^RESULT|.*|FAIL|' /opt/acfs-src/tests/out/*.out || true
-          ! grep -Eq '^SUMMARY\|[^|]*\|(pass=[0-9]+\|fail=[1-9]|aborted|skipped)|GUARD' /opt/acfs-src/tests/out/summary
+          cat /opt/tracefs-src/tests/out/summary
+          grep -h '^RESULT|.*|FAIL|' /opt/tracefs-src/tests/out/*.out || true
+          ! grep -Eq '^SUMMARY\|[^|]*\|(pass=[0-9]+\|fail=[1-9]|aborted|skipped)|GUARD' /opt/tracefs-src/tests/out/summary
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: integration-out
-          path: /opt/acfs-src/tests/out
+          path: /opt/tracefs-src/tests/out
           if-no-files-found: ignore
 
   kernel:
@@ -142,7 +142,7 @@ jobs:
         run: BUSYBOX=$(command -v busybox) TIMEOUT=1500 bash kernel/test.sh "$RUNNER_TEMP/k"
 
   dsh-e2e:
-    name: dsh-acfs in a real DeepSeek Harness (${{ matrix.os }})
+    name: dsh-tracefs in a real DeepSeek Harness (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -172,5 +172,5 @@ jobs:
           node --import tsx "$GITHUB_WORKSPACE/market/validate.ts" "$PWD" "$GITHUB_WORKSPACE/market/index.json" | tee "$RUNNER_TEMP/specs"
           spec=$(head -1 "$RUNNER_TEMP/specs" | sed 's/^[^:]*: //')
           DSH_HOME="$RUNNER_TEMP/home" pnpm dsh plugin --profile market add "$spec"
-          DSH_HOME="$RUNNER_TEMP/home" pnpm dsh --profile market --dump-config | grep -q '^# == dsh-acfs'
-          DSH_HOME="$RUNNER_TEMP/home" node -e "import('$RUNNER_TEMP/home/profiles/market/node_modules/dsh-acfs/index.js').then(m => { if (m.name !== 'acfs') process.exit(1) })"
+          DSH_HOME="$RUNNER_TEMP/home" pnpm dsh --profile market --dump-config | grep -q '^# == dsh-tracefs'
+          DSH_HOME="$RUNNER_TEMP/home" node -e "import('$RUNNER_TEMP/home/profiles/market/node_modules/dsh-tracefs/index.js').then(m => { if (m.name !== 'tracefs') process.exit(1) })"

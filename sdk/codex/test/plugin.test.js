@@ -6,21 +6,21 @@ import path from "node:path";
 import { test } from "node:test";
 import { fileURLToPath } from "node:url";
 
-import { describe } from "../hooks/acfs.mjs";
+import { describe } from "../hooks/tracefs.mjs";
 import { Store } from "../lib/portable/index.js";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const REPO = path.resolve(ROOT, "..", "..");
 
 function setup(t) {
-  const tmp = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "acfs-codex-")));
+  const tmp = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "tracefs-codex-")));
   t.after(() => fs.rmSync(tmp, { recursive: true, force: true }));
   const store = Store.init(path.join(tmp, "store"));
   const main = store.register("app");
   fs.writeFileSync(path.join(main, "a.txt"), "v0\n");
   store.checkpoint("app", "main");
   const br = store.branch("app", "codex");
-  const env = { ...process.env, PLUGIN_ROOT: ROOT, PLUGIN_DATA: path.join(tmp, "data"), ACFS_PROC: "" };
+  const env = { ...process.env, PLUGIN_ROOT: ROOT, PLUGIN_DATA: path.join(tmp, "data"), TRACEFS_PROC: "" };
   return { tmp, store, main, br, env };
 }
 
@@ -32,7 +32,7 @@ function hook(env, input) {
 }
 
 function skill(env, cwd, ...args) {
-  const r = spawnSync(process.execPath, [path.join(ROOT, "skills", "acfs", "scripts", "acfs.mjs"), ...args], { cwd, env, encoding: "utf8" });
+  const r = spawnSync(process.execPath, [path.join(ROOT, "skills", "tracefs", "scripts", "tracefs.mjs"), ...args], { cwd, env, encoding: "utf8" });
   return { code: r.status, out: r.stdout.trim(), err: r.stderr.trim() };
 }
 
@@ -48,9 +48,9 @@ async function toolCall(env, cwd, id, tool, input, body) {
 
 test("the plugin manifest, hooks and marketplace entry fit together", () => {
   const plugin = JSON.parse(fs.readFileSync(path.join(ROOT, ".codex-plugin", "plugin.json"), "utf8"));
-  assert.equal(plugin.name, "acfs");
+  assert.equal(plugin.name, "tracefs");
   assert.ok(fs.existsSync(path.join(ROOT, plugin.hooks)));
-  assert.ok(fs.existsSync(path.join(ROOT, plugin.skills, "acfs", "SKILL.md")));
+  assert.ok(fs.existsSync(path.join(ROOT, plugin.skills, "tracefs", "SKILL.md")));
   const hooks = JSON.parse(fs.readFileSync(path.join(ROOT, plugin.hooks), "utf8")).hooks;
   assert.deepEqual(Object.keys(hooks).sort(), ["PostToolUse", "PreToolUse", "SessionStart", "Stop"]);
   for (const groups of Object.values(hooks))
@@ -64,8 +64,8 @@ test("the plugin manifest, hooks and marketplace entry fit together", () => {
   const market = JSON.parse(fs.readFileSync(path.join(REPO, ".agents", "plugins", "marketplace.json"), "utf8"));
   const entry = market.plugins.find((p) => p.name === plugin.name);
   assert.equal(path.resolve(REPO, entry.source.path), ROOT);
-  const skillMd = fs.readFileSync(path.join(ROOT, "skills", "acfs", "SKILL.md"), "utf8");
-  assert.match(skillMd, /^---\nname: acfs\ndescription: .+\n---\n/);
+  const skillMd = fs.readFileSync(path.join(ROOT, "skills", "tracefs", "SKILL.md"), "utf8");
+  assert.match(skillMd, /^---\nname: tracefs\ndescription: .+\n---\n/);
 });
 
 test("lib/portable is the same as sdk/portable (run sdk/sync-portable.sh)", () => {
@@ -84,11 +84,11 @@ test("describe names the command or the patched files", () => {
   assert.equal(describe("Write", { file_path: "q.txt" }), "Write: q.txt");
 });
 
-test("session start tells the model acfs is on", (t) => {
+test("session start tells the model tracefs is on", (t) => {
   const { br, env } = setup(t);
   const out = hook(env, base(br, { hook_event_name: "SessionStart", source: "startup" }));
   assert.equal(out.hookSpecificOutput.hookEventName, "SessionStart");
-  assert.match(out.hookSpecificOutput.additionalContext, /acfs is recording your file changes \(acfs-lite app\/codex/);
+  assert.match(out.hookSpecificOutput.additionalContext, /tracefs is recording your file changes \(tracefs-lite app\/codex/);
 });
 
 test("each writing tool call becomes a changeset; stop merges into main", async (t) => {
@@ -120,29 +120,29 @@ test("a merge conflict at stop becomes a system message and leaves main alone", 
   put(main, "a.txt", "main\n");
   await toolCall(env, br, "call_1", "Bash", { command: "echo branch > a.txt" }, () => put(br, "a.txt", "branch\n"));
   const out = hook(env, base(br, { hook_event_name: "Stop", stop_hook_active: false, last_assistant_message: null }));
-  assert.deepEqual(out, { systemMessage: "acfs: not merged into main yet, conflicts in app: a.txt (both modified)" });
+  assert.deepEqual(out, { systemMessage: "tracefs: not merged into main yet, conflicts in app: a.txt (both modified)" });
   assert.equal(get(main, "a.txt"), "main\n");
   assert.equal(hook(env, base(br, { hook_event_name: "Stop", stop_hook_active: true, last_assistant_message: null })), null);
 });
 
-test("ACFS_CODEX_MERGE=0 keeps work on the branch", async (t) => {
+test("TRACEFS_CODEX_MERGE=0 keeps work on the branch", async (t) => {
   const { main, br, env } = setup(t);
   await toolCall(env, br, "c", "Bash", { command: "x" }, () => put(br, "x", "x"));
-  hook({ ...env, ACFS_CODEX_MERGE: "0" }, base(br, { hook_event_name: "Stop", stop_hook_active: false, last_assistant_message: null }));
+  hook({ ...env, TRACEFS_CODEX_MERGE: "0" }, base(br, { hook_event_name: "Stop", stop_hook_active: false, last_assistant_message: null }));
   assert.equal(get(main, "x"), undefined);
 });
 
 test("outside a store every hook is silent", (t) => {
-  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "acfs-codex-none-")));
+  const dir = fs.realpathSync.native(fs.mkdtempSync(path.join(os.tmpdir(), "tracefs-codex-none-")));
   t.after(() => fs.rmSync(dir, { recursive: true, force: true }));
-  const env = { ...process.env, PLUGIN_ROOT: ROOT, PLUGIN_DATA: path.join(dir, "data"), ACFS_PROC: "" };
+  const env = { ...process.env, PLUGIN_ROOT: ROOT, PLUGIN_DATA: path.join(dir, "data"), TRACEFS_PROC: "" };
   for (const ev of ["SessionStart", "PreToolUse", "PostToolUse", "Stop"]) {
     assert.equal(hook(env, base(dir, { hook_event_name: ev, tool_name: "Bash", tool_input: { command: "x" }, tool_use_id: "c" })), null);
   }
   assert.equal(fs.existsSync(path.join(dir, "data")), false);
   const s = skill(env, dir, "status");
   assert.equal(s.code, 0);
-  assert.match(s.out, /acfs is not active/);
+  assert.match(s.out, /tracefs is not active/);
 });
 
 test("bad hook input does not fail the tool call", () => {
@@ -155,7 +155,7 @@ test("the skill script: status, log, diff, undo, merge", async (t) => {
   const { main, br, env } = setup(t);
   await toolCall(env, br, "call_1", "Bash", { command: "echo 1 > a.txt" }, () => put(br, "a.txt", "1\n"));
   await toolCall(env, br, "call_2", "Bash", { command: "echo n > n.txt" }, () => put(br, "n.txt", "n\n"));
-  assert.match(skill(env, br, "status").out, /acfs-lite app\/codex/);
+  assert.match(skill(env, br, "status").out, /tracefs-lite app\/codex/);
   const log = skill(env, br, "log").out.split("\n").map((l) => l.split("\t"));
   const [c2, c1] = log.filter((l) => l[2] !== "-");
   assert.deepEqual([c2[1], c2[2], c2[3]], ["codex", "call_2", "Bash: echo n > n.txt"]);

@@ -1,5 +1,5 @@
 """Drive the Python SDK through a workspace cycle, logging [op, result] lines.
-Usage: sdk_smoke.py LOG FILE. Env: ACFS_SOCKET, W (workspace "w" path)."""
+Usage: sdk_smoke.py LOG FILE. Env: TRACEFS_SOCKET, W (workspace "w" path)."""
 
 import base64
 import json
@@ -7,7 +7,7 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "sdk/python/src"))
-from acfs_sdk import AcfsError, Client  # noqa: E402
+from tracefs_sdk import TracefsError, Client  # noqa: E402
 
 c = Client()
 log = open(sys.argv[1], "w")
@@ -35,7 +35,7 @@ for op, args, code in [("proc.show", {"proc_id": "nope"}, "not_found"), ("proc.r
     try:
         c.call(op, args)
         raise SystemExit(f"{op}: expected an error")
-    except AcfsError as e:
+    except TracefsError as e:
         assert e.code == code, (op, e.code)
 assert call("session.merge", {"session": s})["state"] == "merged"
 call("session.list")

@@ -3,47 +3,6 @@
 version = 4
 
 [[package]]
-name = "acfs"
-version = "0.0.0"
-dependencies = [
- "acfs-core",
- "anyhow",
- "clap",
- "libc",
- "rustix",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "acfs-core"
-version = "0.0.0"
-dependencies = [
- "base64",
- "clap",
- "ignore",
- "schemars",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "acfsd"
-version = "0.0.0"
-dependencies = [
- "acfs-core",
- "anyhow",
- "clap",
- "libc",
- "rusqlite",
- "rustix",
- "serde",
- "serde_json",
- "sha2",
- "ulid",
-]
-
-[[package]]
 name = "aho-corasick"
 version = "1.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -793,6 +752,47 @@ dependencies = [
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "tracefs"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "libc",
+ "rustix",
+ "serde",
+ "serde_json",
+ "tracefs-core",
+]
+
+[[package]]
+name = "tracefs-core"
+version = "0.0.0"
+dependencies = [
+ "base64",
+ "clap",
+ "ignore",
+ "schemars",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "tracefsd"
+version = "0.0.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "libc",
+ "rusqlite",
+ "rustix",
+ "serde",
+ "serde_json",
+ "sha2",
+ "tracefs-core",
+ "ulid",
 ]
 
 [[package]]

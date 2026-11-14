@@ -76,7 +76,7 @@ U1=${SUDO_USER:?run via sudo}
 H1=$(getent passwd "$U1" | cut -d: -f6)
 stop_daemon
 WSROOT= start_daemon
-asuser() { runuser -u "$U1" -- "$BIN/acfs" --socket "$SOCK" "$@"; }
+asuser() { runuser -u "$U1" -- "$BIN/tracefs" --socket "$SOCK" "$@"; }
 mkdir -p "$H1/.afst-t01/w" && chown -R "$U1:" "$H1/.afst-t01"
 ok 1.13 "a user registers a directory below its home" asuser ws register home1 --from "$H1/.afst-t01/w"
 ok 1.13a "but not outside it" below asuser ws register out1 --from "$(mkws out1)"

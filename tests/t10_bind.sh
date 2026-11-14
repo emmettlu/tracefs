@@ -8,7 +8,7 @@ DARGS=(--auto-quiet-ms 300 --auto-max-ms 1500)
 start_daemon "${DARGS[@]}"
 
 D=$(cd "$(dirname "$0")" && pwd)
-export ACFS_SOCKET=$SOCK PYTHONDONTWRITEBYTECODE=1
+export TRACEFS_SOCKET=$SOCK PYTHONDONTWRITEBYTECODE=1
 state() { afs session list | j "[s['state'] for s in d if s['id']=='$1'][0]"; }
 until_state() { for _ in $(seq 1 50); do [ "$(state "$1")" = "$2" ] && return 0; sleep 0.2; done; return 1; }
 export -f state until_state
@@ -19,7 +19,7 @@ holder() {
 	python3 - "$1" >"$2" <<PY &
 import sys, time
 sys.path.insert(0, "$D/../sdk/python/src")
-from acfs_sdk import Client
+from tracefs_sdk import Client
 c, prev = Client(), None
 for _ in range(int(sys.argv[1])):
     if prev:

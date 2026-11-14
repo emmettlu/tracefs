@@ -17,10 +17,10 @@ import {
 
 import { Store } from "../portable/index.js";
 
-process.env.ACFS_PI_RESTORE = "always";
-delete process.env.ACFS_PROC;
+process.env.TRACEFS_PI_RESTORE = "always";
+delete process.env.TRACEFS_PROC;
 
-const tmp = realpathSync.native(mkdtempSync(join(tmpdir(), "acfs-pi-portable-")));
+const tmp = realpathSync.native(mkdtempSync(join(tmpdir(), "tracefs-pi-portable-")));
 const store = Store.init(join(tmp, "store"));
 const src = join(tmp, "src");
 const { writeFileSync, mkdirSync } = await import("node:fs");
@@ -93,13 +93,13 @@ try {
   await session.navigateTree(done2.id);
   ok("/tree forward to turn 2 restores its files", () => assert.deepEqual([read("a.txt"), read("b.txt")?.trim()], ["v2\n", "b"]));
 
-  await session.prompt("/acfs undo");
-  ok("/acfs undo reverts the last batch of tool calls", () => assert.deepEqual([read("a.txt"), read("b.txt")], ["v1\n", undefined]));
-  await session.prompt("/acfs undo");
-  ok("a second /acfs undo reverts the one before", () => assert.equal(read("a.txt"), "v0\n"));
+  await session.prompt("/tracefs undo");
+  ok("/tracefs undo reverts the last batch of tool calls", () => assert.deepEqual([read("a.txt"), read("b.txt")], ["v1\n", undefined]));
+  await session.prompt("/tracefs undo");
+  ok("a second /tracefs undo reverts the one before", () => assert.equal(read("a.txt"), "v0\n"));
 
-  await session.prompt("/acfs merge");
-  ok("/acfs merge brings the undone state into main", () => assert.equal(readIn(main, "a.txt"), "v0\n"));
+  await session.prompt("/tracefs merge");
+  ok("/tracefs merge brings the undone state into main", () => assert.equal(readIn(main, "a.txt"), "v0\n"));
 
   writeFileSync(join(main, "other.txt"), "from main\n");
   await turn("write v3", fauxToolCall("write", { path: "a.txt", content: "v3\n" }));

@@ -1,0 +1,12 @@
+[package]
+name = "tracefs"
+edition.workspace = true
+
+[dependencies]
+tracefs-core = { path = "../tracefs-core" }
+anyhow.workspace = true
+clap.workspace = true
+libc.workspace = true
+rustix.workspace = true
+serde.workspace = true
+serde_json.workspace = true
