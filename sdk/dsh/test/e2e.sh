@@ -32,9 +32,11 @@ mock=$!
 for _ in $(seq 100); do grep -q '"ready"' "$work/mock.log" 2>/dev/null && break; sleep 0.2; done
 grep -q '"ready"' "$work/mock.log" || { cat "$work/mock.log"; exit 1; }
 
+limit=()
+if command -v timeout >/dev/null; then limit=(timeout 300); elif command -v gtimeout >/dev/null; then limit=(gtimeout 300); fi
 status=0
 (cd "$branch" && TSX_TSCONFIG_PATH=$dsh/tsconfig.json DSH_HOME=$work/home DEEPSEEK_BASE_URL=http://127.0.0.1:$port/v1 DEEPSEEK_API_KEY=mock-key \
-	timeout 300 node --import "file://$dsh/node_modules/tsx/dist/esm/index.mjs" "$dsh/apps/cli/src/bin.ts" \
+	${limit[@]+"${limit[@]}"} node --import "file://$dsh/node_modules/tsx/dist/esm/index.mjs" "$dsh/apps/cli/src/bin.ts" \
 	--profile headless --patch "$work/overlay.yml" --json "write hello") >"$work/dsh.out" 2>"$work/dsh.err" || status=$?
 
 fail=0

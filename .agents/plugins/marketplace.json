@@ -1,0 +1,7 @@
+{
+  "name": "tracefs",
+  "interface": { "displayName": "tracefs" },
+  "plugins": [
+    { "name": "acfs", "source": { "source": "local", "path": "./sdk/codex" }, "category": "Developer Tools" }
+  ]
+}

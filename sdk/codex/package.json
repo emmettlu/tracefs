@@ -1,0 +1,12 @@
+{
+  "name": "acfs-codex",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Codex plugin: acfs changesets for every Bash and apply_patch call, merged when a turn ends, and an acfs skill",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "sync": "sh sync.sh",
+    "test": "node --test \"test/*.test.js\""
+  }
+}

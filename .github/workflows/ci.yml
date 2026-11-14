@@ -46,6 +46,10 @@ jobs:
         if: ${{ !cancelled() }}
         working-directory: sdk/dsh
         run: node --test "test/*.test.js"
+      - name: acfs Codex plugin
+        if: ${{ !cancelled() }}
+        working-directory: sdk/codex
+        run: node --test "test/*.test.js"
       - name: acfs-pi install
         id: piinstall
         if: ${{ !cancelled() }}

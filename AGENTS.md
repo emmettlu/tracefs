@@ -22,6 +22,7 @@ acfs (AgentComputerFS): agent 版本化文件系统. 本仓库 (tracefs) 有两�
 | `sdk/portable` | `acfs-portable`: 插件共用的后端 (acfsd 或 acfs-lite) 和 `acfs-lite` 命令, 纯 JS, 见「插件」 |
 | `sdk/pi` | pi-coding-agent 扩展, 见「插件」 |
 | `sdk/dsh` | DeepSeek Harness (dsh) 插件包 `dsh-acfs`, 见「插件」 |
+| `sdk/codex`, `.agents/plugins/marketplace.json` | Codex 插件 `acfs` (hooks + skill) 和把本仓库当插件源的 marketplace, 见「插件」 |
 | `.github/workflows/ci.yml` | GitHub Actions: Linux / macOS / Windows 上的插件和 Rust, Linux 上的 acfsd 集成测试和内核模块 |
 | `tests/` | 集成测试 (root, btrfs, systemd), `stress.py` 随机文件操作, `bench.sh` 基准 |
 | `tests/kernel/` | acfs 依赖的内核/btrfs/overlayfs 行为探针 (`probe.sh`, 「设计」里的「验证 x.y」) 和内核层性能基准 (`t07_perf.sh`); `ovl.c` 是它们用的挂载小工具 |
@@ -61,6 +62,7 @@ Linux >= 6.8 (`lowerdir+`), 带 btrfs, overlayfs 和 loop; systemd (`systemd-run
 | --- | --- | --- |
 | acfs-portable | `cd sdk/portable && node --test "test/*.test.js"`: 仓库操作 (diff、同毫秒的改动、可执行位、软链、二进制、undo / revert / reset 和冲突、分支合并、文本合并、锁、prune)、后端选择、假 acfsd socket 上的协议、`acfs-lite` 命令、镜像 (macOS APFS 镜像并量快照占的空间, Linux btrfs / btrfs 镜像要 root 或 udisksctl 加 `ACFS_LITE_TEST_DIR` 指到非 btrfs 目录, Windows VHDX 要管理员) | Linux / macOS / Windows |
 | dsh-acfs | `cd sdk/dsh && node --test "test/*.test.js"` (照 dsh 的事件签名写的假 ctx, 真 acfs-lite 仓库) | 三个都跑 |
+| Codex 插件 | `cd sdk/codex && node --test "test/*.test.js"`: 清单 / hooks / marketplace 对得上、`lib/portable` 和 `sdk/portable` 相同、按 Codex 的 hook 输入 JSON 逐个起 `hook.mjs` (changeset、合并、冲突消息、不在仓库里时不出声、坏输入不挡工具)、skill 脚本 | 三个都跑 |
 | dsh-acfs 端到端 | `DSH_SOURCE=<构建好的 deepseek-harness> bash sdk/dsh/test/e2e.sh`: 真 dsh 的 headless profile 加本插件, dsh 自带的 mock 模型 (`llm-mock-server`) 在 acfs-lite 分支里调 bash, 查 changeset (作者、tool call id) 和回合结束时合进 main. CI 钉住 deepseek-harness 的一个提交 (`DSH_REF`) | Linux / macOS |
 | pi 扩展 | `cd sdk/pi && npm install && npx tsc -p . && node test-portable.ts` (真 pi 运行时, faux 模型, acfs-lite 分支); acfsd 下是 `node test.ts` (要守护进程, 自己 `acfs run`) | 三个都跑; acfsd 那份只在 Linux |
 | Rust | `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`; macOS / Windows 只 `cargo test -p acfs-core` | 三个都跑 |
@@ -119,6 +121,15 @@ agent 不会被关进自己的分支 (在哪棵树里跑就改哪棵); 操作是
   `agent/pre-step` (下一步开始) 把上一步的调用记成一个 changeset, `turn/end` 记完并 `settle` (配置 `merge: false` 关掉), 冲突只 warn.
   给模型一个工具 `acfs` (`action`: status / log / diff / undo / merge). 同一会话的操作排成一队; 并行的工具调用会落进同一个 changeset.
   配置还有 `author` (默认 `dsh`).
+
+- **Codex** (`sdk/codex`, `.codex-plugin/plugin.json`): 本仓库是 Codex 的插件源 (`.agents/plugins/marketplace.json` 指向 `./sdk/codex`).
+  hooks (`hooks/hooks.json`, 命令经 `$PLUGIN_ROOT`; Windows 用 `commandWindows` 里的 `node -e`, 不依赖 shell 展开变量): `SessionStart` 告诉模型
+  acfs 在记录; `PreToolUse` (matcher `Bash|apply_patch|Edit|Write`) 在这一次调用前记 "before"; `PostToolUse` 把这次调用记成一个 changeset
+  (作者 `codex`, `tool_call` 是 `tool_use_id`, 消息是命令首行或 patch 里的文件); `Stop` 时 `settle` (`ACFS_CODEX_MERGE=0` 关), 冲突回
+  `systemMessage`. 会话状态 (`last` / `before` / 历史) 在 `$PLUGIN_DATA/sessions/<session_id>.json`, 每个 hook 是单独的进程. skill `acfs`
+  (`skills/acfs/SKILL.md` + `scripts/acfs.mjs`): status / log / diff / undo / merge. Codex 装插件是复制整个目录, 所以 `lib/portable` 是
+  `sdk/portable` 的副本: 改了 `sdk/portable` 要跑 `sdk/codex/sync.sh` (测试比对两份, 不一致就失败). 装法: `codex plugin marketplace add emmettlu/tracefs`,
+  再装 `acfs`; 插件的 hooks 要在 Codex 里审核信任后才跑.
 
 ## 内核态
 
