@@ -1,0 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0-only
+acfs_basic
+acfs_concurrent
+acfs_crash
+acfs_stress
+fsck.acfs
+mkfs.acfs

@@ -1,0 +1,18 @@
+# SPDX-License-Identifier: GPL-2.0-only
+
+config AC_FS
+	tristate "acfs: the Agent Computer File System"
+	depends on BLOCK && PAGE_SIZE_4KB
+	select BUFFER_HEAD
+	select CRC32
+	select XXHASH
+	help
+	  A copy-on-write file system with branches: a branch is a tree
+	  of files that shares its blocks with the branch it was made
+	  from until either changes them, so making one is O(1).
+	  Mounting a device gives its main branch, or another with
+	  -o branch=NAME; ioctls make, list and delete branches and
+	  read-only snapshots. AgentOS gives each agent its own branch
+	  of a workspace. See Documentation/userspace-api/ac/acfs.rst.
+
+	  If unsure, say N.

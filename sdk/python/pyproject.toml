@@ -1,0 +1,10 @@
+[project]
+name = "acfs-sdk"
+version = "0.2.0"
+description = "Client for the acfs-daemon socket protocol"
+requires-python = ">=3.11"
+dependencies = []
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

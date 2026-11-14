@@ -1,0 +1,2611 @@
+{
+  "$defs": {
+    "Applied": {
+      "description": "`reset` and `revert`.",
+      "properties": {
+        "conflict": {
+          "type": "boolean"
+        },
+        "results": {
+          "items": {
+            "$ref": "#/$defs/MergeResult"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "results",
+        "conflict"
+      ],
+      "type": "object"
+    },
+    "BaseChanged": {
+      "description": "`base.promote` and `base.flatten`.",
+      "properties": {
+        "base": {
+          "type": "string"
+        },
+        "changeset": {
+          "type": "string"
+        },
+        "head_snap": {
+          "type": "string"
+        },
+        "layers": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "base",
+        "layers",
+        "head_snap",
+        "changeset"
+      ],
+      "type": "object"
+    },
+    "Change": {
+      "properties": {
+        "from": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PathName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Source of a renamed directory."
+        },
+        "kind": {
+          "$ref": "#/$defs/ChangeKind"
+        },
+        "path": {
+          "$ref": "#/$defs/PathName"
+        }
+      },
+      "required": [
+        "path",
+        "kind"
+      ],
+      "type": "object"
+    },
+    "ChangeKind": {
+      "enum": [
+        "add",
+        "modify",
+        "delete",
+        "rename"
+      ],
+      "type": "string"
+    },
+    "Changeset": {
+      "description": "Snapshot workspaces now (their main: the directory as it is).",
+      "properties": {
+        "author": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "session": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tool_call": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ws": {
+          "default": [],
+          "description": "Workspaces; default: those of `--session`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "ChangesetInfo": {
+      "description": "An entry of `log`.",
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "created_at": {
+          "description": "Unix time in ms.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "owner_kind": {
+          "description": "workspace or process.",
+          "type": "string"
+        },
+        "session": {
+          "description": "Session labelling the workspace when the changeset was taken.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "snaps": {
+          "items": {
+            "$ref": "#/$defs/SnapInfo"
+          },
+          "type": "array"
+        },
+        "tool_call": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "owner_kind",
+        "owner",
+        "author",
+        "message",
+        "created_at",
+        "snaps"
+      ],
+      "type": "object"
+    },
+    "ConflictInfo": {
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/PathName"
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "path",
+        "reason"
+      ],
+      "type": "object"
+    },
+    "Diff": {
+      "properties": {
+        "a": {
+          "type": "string"
+        },
+        "all": {
+          "default": false,
+          "description": "Also list paths that `.acfsignore` leaves out.",
+          "type": "boolean"
+        },
+        "b": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "full": {
+          "default": false,
+          "description": "Compare complete views instead of the upper-layer shortcut (slow; for verification).",
+          "type": "boolean"
+        },
+        "patch": {
+          "default": false,
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "a"
+      ],
+      "type": "object"
+    },
+    "DiffResult": {
+      "description": "An entry of `diff`: one workspace.",
+      "properties": {
+        "changes": {
+          "items": {
+            "$ref": "#/$defs/Change"
+          },
+          "type": "array"
+        },
+        "from": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "patch": {
+          "description": "Unified diff of regular files, with `patch`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "summary_only": {
+          "description": "The snapshot was pruned: `changes` is the summary kept against its parent.",
+          "type": "boolean"
+        },
+        "to": {
+          "type": "string"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "to",
+        "changes"
+      ],
+      "type": "object"
+    },
+    "ErrorBody": {
+      "properties": {
+        "code": {
+          "description": "invalid, not_found, state (not allowed in the current state), exists, exhausted or internal.",
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "message"
+      ],
+      "type": "object"
+    },
+    "FsEdit": {
+      "properties": {
+        "author": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "base": {
+          "default": null,
+          "description": "The changeset or snapshot the changes were made against: refuse them if a path\nthey touch changed since.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "message": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ops": {
+          "items": {
+            "$ref": "#/$defs/FsOp"
+          },
+          "type": "array"
+        },
+        "tool_call": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "ops"
+      ],
+      "type": "object"
+    },
+    "FsEditStatus": {
+      "oneOf": [
+        {
+          "enum": [
+            "applied"
+          ],
+          "type": "string"
+        },
+        {
+          "const": "unchanged",
+          "description": "The changes left the workspace as it was.",
+          "type": "string"
+        },
+        {
+          "const": "conflict",
+          "description": "Paths the changes touch changed since `base`; nothing was written.",
+          "type": "string"
+        }
+      ]
+    },
+    "FsEdited": {
+      "description": "`fs.edit`.",
+      "properties": {
+        "changeset": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "conflict": {
+          "description": "Same as `status == conflict` (the CLI exits 2).",
+          "type": "boolean"
+        },
+        "conflicts": {
+          "default": [],
+          "description": "With `conflict`: paths changed since `base`.",
+          "items": {
+            "$ref": "#/$defs/PathName"
+          },
+          "type": "array"
+        },
+        "snap": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/FsEditStatus"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "status",
+        "conflict"
+      ],
+      "type": "object"
+    },
+    "FsEntry": {
+      "description": "`fs.stat`, and entries of `fs.list`.",
+      "properties": {
+        "gid": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "kind": {
+          "$ref": "#/$defs/FsKind"
+        },
+        "mode": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "mtime": {
+          "description": "Unix time in ms.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "path": {
+          "$ref": "#/$defs/PathName",
+          "description": "Path from the workspace root (`fs.stat`) or name in the directory (`fs.list`)."
+        },
+        "size": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "uid": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "path",
+        "kind",
+        "size",
+        "mode",
+        "uid",
+        "gid",
+        "mtime"
+      ],
+      "type": "object"
+    },
+    "FsFile": {
+      "description": "`fs.read`.",
+      "properties": {
+        "content": {
+          "description": "Base64 content of a regular file (from `offset`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "entry": {
+          "$ref": "#/$defs/FsEntry"
+        },
+        "snap": {
+          "description": "Snapshot read; None for the workspace's directory.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "target": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PathName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "Target of a symlink."
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "entry"
+      ],
+      "type": "object"
+    },
+    "FsKind": {
+      "enum": [
+        "file",
+        "dir",
+        "symlink",
+        "fifo",
+        "other"
+      ],
+      "type": "string"
+    },
+    "FsList": {
+      "description": "`fs.list`: the entries of a directory.",
+      "properties": {
+        "at": {
+          "default": null,
+          "description": "A changeset or snapshot of the workspace.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "path": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/PathName"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Directory; default the workspace root."
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws"
+      ],
+      "type": "object"
+    },
+    "FsListing": {
+      "description": "`fs.list`.",
+      "properties": {
+        "entries": {
+          "items": {
+            "$ref": "#/$defs/FsEntry"
+          },
+          "type": "array"
+        },
+        "snap": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "entries"
+      ],
+      "type": "object"
+    },
+    "FsOp": {
+      "description": "One change of `fs.edit`. New entries belong to the workspace owner.",
+      "oneOf": [
+        {
+          "description": "Create or replace a regular file; missing parent directories are created.",
+          "properties": {
+            "content": {
+              "description": "Base64.",
+              "type": "string"
+            },
+            "mode": {
+              "default": null,
+              "description": "Default: the replaced file's mode, else 0644.",
+              "format": "uint32",
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "op": {
+              "const": "write",
+              "type": "string"
+            },
+            "path": {
+              "$ref": "#/$defs/PathName"
+            }
+          },
+          "required": [
+            "op",
+            "path",
+            "content"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Create a directory and missing parents.",
+          "properties": {
+            "mode": {
+              "default": null,
+              "format": "uint32",
+              "minimum": 0,
+              "type": [
+                "integer",
+                "null"
+              ]
+            },
+            "op": {
+              "const": "mkdir",
+              "type": "string"
+            },
+            "path": {
+              "$ref": "#/$defs/PathName"
+            }
+          },
+          "required": [
+            "op",
+            "path"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Remove an entry, with everything below it.",
+          "properties": {
+            "op": {
+              "const": "delete",
+              "type": "string"
+            },
+            "path": {
+              "$ref": "#/$defs/PathName"
+            }
+          },
+          "required": [
+            "op",
+            "path"
+          ],
+          "type": "object"
+        },
+        {
+          "description": "Rename an entry; `to` must not exist.",
+          "properties": {
+            "from": {
+              "$ref": "#/$defs/PathName"
+            },
+            "op": {
+              "const": "rename",
+              "type": "string"
+            },
+            "to": {
+              "$ref": "#/$defs/PathName"
+            }
+          },
+          "required": [
+            "op",
+            "from",
+            "to"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "symlink",
+              "type": "string"
+            },
+            "path": {
+              "$ref": "#/$defs/PathName"
+            },
+            "target": {
+              "$ref": "#/$defs/PathName"
+            }
+          },
+          "required": [
+            "op",
+            "path",
+            "target"
+          ],
+          "type": "object"
+        },
+        {
+          "properties": {
+            "mode": {
+              "format": "uint32",
+              "minimum": 0,
+              "type": "integer"
+            },
+            "op": {
+              "const": "chmod",
+              "type": "string"
+            },
+            "path": {
+              "$ref": "#/$defs/PathName"
+            }
+          },
+          "required": [
+            "op",
+            "path",
+            "mode"
+          ],
+          "type": "object"
+        }
+      ]
+    },
+    "FsRead": {
+      "description": "`fs.read`: a file's content (from `offset`, at most `length` bytes) or a symlink's target.",
+      "properties": {
+        "at": {
+          "default": null,
+          "description": "A changeset or snapshot of the workspace.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "length": {
+          "default": null,
+          "description": "At most this many bytes (default: to the end, up to 64 MiB).",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "offset": {
+          "default": null,
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "path": {
+          "$ref": "#/$defs/PathName"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "path"
+      ],
+      "type": "object"
+    },
+    "FsStat": {
+      "description": "`fs.stat`: one entry.",
+      "properties": {
+        "at": {
+          "default": null,
+          "description": "A changeset or snapshot of the workspace.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "path": {
+          "$ref": "#/$defs/PathName"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "path"
+      ],
+      "type": "object"
+    },
+    "LiveChangeset": {
+      "description": "`changeset`.",
+      "properties": {
+        "changeset": {
+          "description": "None when nothing changed since the last changeset.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "session": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "unchanged": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "unchanged"
+      ],
+      "type": "object"
+    },
+    "LiveSpan": {
+      "description": "A stretch of a workspace's history labelled by a session.",
+      "properties": {
+        "discard": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/MergeResult"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "description": "`session.discard`: bringing the workspace back to `start_snap`."
+        },
+        "end_snap": {
+          "description": "None while the session is active.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "start_snap": {
+          "type": "string"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "start_snap"
+      ],
+      "type": "object"
+    },
+    "Log": {
+      "properties": {
+        "n": {
+          "default": null,
+          "format": "uint32",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "proc_id": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "session": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ws": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "MergeResult": {
+      "description": "Merge into one workspace's branch (proc.merge, reset, revert, session.discard).",
+      "properties": {
+        "actions": {
+          "description": "Entries written (merged).",
+          "format": "uint",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "changeset": {
+          "description": "Changeset recording the merge (merged).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "conflicts": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ConflictInfo"
+          },
+          "type": "array"
+        },
+        "from": {
+          "description": "The snapshot merged in.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "snap": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "status": {
+          "$ref": "#/$defs/MergeStatus"
+        },
+        "unused_resolutions": {
+          "default": [],
+          "description": "Resolutions given for paths that had no conflict.",
+          "items": {
+            "$ref": "#/$defs/PathName"
+          },
+          "type": "array"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "status"
+      ],
+      "type": "object"
+    },
+    "MergeStatus": {
+      "enum": [
+        "merged",
+        "up-to-date",
+        "conflict",
+        "discarded"
+      ],
+      "type": "string"
+    },
+    "PathName": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "properties": {
+            "base64": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "base64"
+          ],
+          "title": "Base64Path",
+          "type": "object"
+        }
+      ],
+      "description": "A path in API messages: a string, or `{\"base64\": ...}` when it is not UTF-8."
+    },
+    "Pong": {
+      "description": "`ping`.",
+      "properties": {
+        "protocol": {
+          "description": "[`crate::proto::PROTOCOL`] of the daemon.",
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "version": {
+          "description": "Daemon version.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "version",
+        "protocol"
+      ],
+      "type": "object"
+    },
+    "ProcBranch": {
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "head_snap": {
+          "type": "string"
+        },
+        "path": {
+          "description": "The workspace's directory; the process sees its branch there.",
+          "type": "string"
+        },
+        "state": {
+          "description": "open (work not merged yet), conflicted, merged or discarded.",
+          "type": "string"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "path",
+        "branch",
+        "head_snap",
+        "state"
+      ],
+      "type": "object"
+    },
+    "ProcChangeset": {
+      "properties": {
+        "author": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "proc_id": {
+          "type": "string"
+        },
+        "since": {
+          "default": null,
+          "description": "Record nothing when every branch still equals this changeset's snapshot of its workspace (default: the branch's head).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "tool_call": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "proc_id",
+        "author",
+        "message"
+      ],
+      "type": "object"
+    },
+    "ProcChangesetTaken": {
+      "description": "`proc.changeset`.",
+      "properties": {
+        "changeset": {
+          "description": "None when nothing changed (see `since`); no snapshot is kept then.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "pause_ms": {
+          "format": "double",
+          "type": "number"
+        },
+        "paused": {
+          "description": "Whether the process was frozen (it was running).",
+          "type": "boolean"
+        },
+        "snaps": {
+          "items": {
+            "$ref": "#/$defs/SnapRef"
+          },
+          "type": "array"
+        },
+        "unchanged": {
+          "type": "boolean"
+        }
+      },
+      "required": [
+        "unchanged",
+        "snaps",
+        "paused",
+        "pause_ms"
+      ],
+      "type": "object"
+    },
+    "ProcExited": {
+      "description": "`proc.run` (second response line): the process exited and its work was merged.",
+      "properties": {
+        "code": {
+          "description": "Exit code; None when killed by a signal (or unknown after a daemon restart).",
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "id": {
+          "type": "string"
+        },
+        "merge": {
+          "$ref": "#/$defs/ProcMerged"
+        },
+        "signal": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "merge"
+      ],
+      "type": "object"
+    },
+    "ProcInfo": {
+      "description": "`proc.show` and entries of `proc.list`.",
+      "properties": {
+        "branches": {
+          "items": {
+            "$ref": "#/$defs/ProcBranch"
+          },
+          "type": "array"
+        },
+        "cmd": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "created_at": {
+          "description": "Unix time in ms.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "cwd": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "pid": {
+          "format": "int32",
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "state": {
+          "description": "running, exiting (exited, its work is being merged), conflicted (exited, work not merged yet), merged\nor discarded.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "state",
+        "cmd",
+        "cwd",
+        "created_at",
+        "branches"
+      ],
+      "type": "object"
+    },
+    "ProcKilled": {
+      "description": "`proc.kill`.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sent": {
+          "description": "False when the process was not running.",
+          "type": "boolean"
+        },
+        "signal": {
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "signal",
+        "sent"
+      ],
+      "type": "object"
+    },
+    "ProcMerge": {
+      "properties": {
+        "discard_ws": {
+          "default": [],
+          "description": "Workspaces whose unmerged changes are dropped (the branch is reset to main).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "no_resolver": {
+          "default": false,
+          "description": "Report conflicts instead of running the resolver.",
+          "type": "boolean"
+        },
+        "proc_id": {
+          "type": "string"
+        },
+        "resolutions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ResolutionSpec"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "proc_id"
+      ],
+      "type": "object"
+    },
+    "ProcMerged": {
+      "description": "`proc.merge`.",
+      "properties": {
+        "changeset": {
+          "description": "Snapshot of the process's branches taken before merging.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "conflict": {
+          "type": "boolean"
+        },
+        "id": {
+          "type": "string"
+        },
+        "resolver": {
+          "description": "What the resolver did, when it ran.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "results": {
+          "description": "Merges into main, one per workspace with changes.",
+          "items": {
+            "$ref": "#/$defs/MergeResult"
+          },
+          "type": "array"
+        },
+        "state": {
+          "description": "The process's state afterwards: running, conflicted, merged or discarded.",
+          "type": "string"
+        },
+        "updated": {
+          "description": "Running process: main's other changes merged into its branches.",
+          "items": {
+            "$ref": "#/$defs/MergeResult"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "id",
+        "state",
+        "results",
+        "updated",
+        "conflict"
+      ],
+      "type": "object"
+    },
+    "ProcRun": {
+      "properties": {
+        "cmd": {
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "cwd": {
+          "description": "Working directory (inside the process's view).",
+          "type": "string"
+        },
+        "env": {
+          "default": [],
+          "description": "The whole environment, `KEY=value`.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "resolver": {
+          "default": [],
+          "description": "Command run as the caller, in a directory with `TASK.md`, when merging conflicts.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "ws": {
+          "default": [],
+          "description": "Workspaces the process gets a branch of; default: every attached workspace of the caller.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "required": [
+        "cmd",
+        "cwd"
+      ],
+      "type": "object"
+    },
+    "ProcStarted": {
+      "description": "`proc.run` (first response line).",
+      "properties": {
+        "branches": {
+          "items": {
+            "$ref": "#/$defs/ProcBranch"
+          },
+          "type": "array"
+        },
+        "id": {
+          "type": "string"
+        },
+        "pid": {
+          "format": "int32",
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "pid",
+        "branches"
+      ],
+      "type": "object"
+    },
+    "Pruned": {
+      "description": "`ws.prune`.",
+      "properties": {
+        "dropped": {
+          "description": "Snapshots whose data was dropped (they keep metadata and a diff summary).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "dry_run": {
+          "type": "boolean"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "dropped",
+        "dry_run"
+      ],
+      "type": "object"
+    },
+    "PullStatus": {
+      "enum": [
+        "up-to-date",
+        "fast-forward",
+        "created"
+      ],
+      "type": "string"
+    },
+    "Pulled": {
+      "description": "`pull`.",
+      "properties": {
+        "bases_received": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "head": {
+          "type": "string"
+        },
+        "snaps_received": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "status": {
+          "$ref": "#/$defs/PullStatus"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "status",
+        "bases_received",
+        "snaps_received",
+        "head"
+      ],
+      "type": "object"
+    },
+    "Pushed": {
+      "description": "`push`.",
+      "properties": {
+        "bases_sent": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "bytes": {
+          "format": "uint64",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "head": {
+          "type": "string"
+        },
+        "remote": {
+          "type": "string"
+        },
+        "snaps_sent": {
+          "format": "uint",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "remote",
+        "bases_sent",
+        "snaps_sent",
+        "bytes",
+        "head"
+      ],
+      "type": "object"
+    },
+    "Remote": {
+      "properties": {
+        "remote": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws"
+      ],
+      "type": "object"
+    },
+    "Request": {
+      "description": "`{\"op\": \"<name>\", \"args\": {...}}`.",
+      "oneOf": [
+        {
+          "properties": {
+            "op": {
+              "const": "ping",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "title": "PingRequest",
+          "type": "object"
+        },
+        {
+          "description": "Take over a directory: acfs mounts the workspace's main over it and records every change made there.",
+          "properties": {
+            "args": {
+              "properties": {
+                "from": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "from"
+              ],
+              "title": "WsRegisterArgs",
+              "type": "object"
+            },
+            "op": {
+              "const": "ws.register",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "WsRegisterRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "ws.list",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "title": "WsListRequest",
+          "type": "object"
+        },
+        {
+          "description": "Stop tracking: write the head back to the host directory and unmount.",
+          "properties": {
+            "args": {
+              "properties": {
+                "ws": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ws"
+              ],
+              "title": "WsDetachArgs",
+              "type": "object"
+            },
+            "op": {
+              "const": "ws.detach",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "WsDetachRequest",
+          "type": "object"
+        },
+        {
+          "description": "Thin out a workspace's automatic snapshots now (also done periodically).",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/WsPrune"
+            },
+            "op": {
+              "const": "ws.prune",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "WsPruneRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/Changeset"
+            },
+            "op": {
+              "const": "changeset",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "ChangesetRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/Reset"
+            },
+            "op": {
+              "const": "reset",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "ResetRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/Revert"
+            },
+            "op": {
+              "const": "revert",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "RevertRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "properties": {
+                "snap": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "snap"
+              ],
+              "title": "BasePromoteArgs",
+              "type": "object"
+            },
+            "op": {
+              "const": "base.promote",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "BasePromoteRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "properties": {
+                "ws": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "ws"
+              ],
+              "title": "BaseFlattenArgs",
+              "type": "object"
+            },
+            "op": {
+              "const": "base.flatten",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "BaseFlattenRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/SessionCreate"
+            },
+            "op": {
+              "const": "session.create",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "SessionCreateRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "session.list",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "title": "SessionListRequest",
+          "type": "object"
+        },
+        {
+          "description": "End a session: its workspaces keep their content, the label stops.",
+          "properties": {
+            "args": {
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ],
+              "title": "SessionMergeArgs",
+              "type": "object"
+            },
+            "op": {
+              "const": "session.merge",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "SessionMergeRequest",
+          "type": "object"
+        },
+        {
+          "description": "End a session and bring its workspaces back to where it started.",
+          "properties": {
+            "args": {
+              "properties": {
+                "session": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "session"
+              ],
+              "title": "SessionDiscardArgs",
+              "type": "object"
+            },
+            "op": {
+              "const": "session.discard",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "SessionDiscardRequest",
+          "type": "object"
+        },
+        {
+          "description": "Run a command as the caller in its own mount namespace, every workspace replaced by\nthe process's own branch. CLI only: the request carries the caller's stdin, stdout and\nstderr (SCM_RIGHTS); a second response line (`ProcExited`) follows when it exits.",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/ProcRun"
+            },
+            "op": {
+              "const": "proc.run",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "ProcRunRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/ProcChangeset"
+            },
+            "op": {
+              "const": "proc.changeset",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "ProcChangesetRequest",
+          "type": "object"
+        },
+        {
+          "description": "The process's task is done: snapshot its branches, merge them into main (the resolver\nhandles conflicts) and, while it runs, bring main's other changes into its branches.",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/ProcMerge"
+            },
+            "op": {
+              "const": "proc.merge",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "ProcMergeRequest",
+          "type": "object"
+        },
+        {
+          "description": "Signal a running process's group (default SIGTERM).",
+          "properties": {
+            "args": {
+              "properties": {
+                "proc_id": {
+                  "type": "string"
+                },
+                "signal": {
+                  "default": null,
+                  "format": "int32",
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "proc_id"
+              ],
+              "title": "ProcKillArgs",
+              "type": "object"
+            },
+            "op": {
+              "const": "proc.kill",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "ProcKillRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "properties": {
+                "proc_id": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "proc_id"
+              ],
+              "title": "ProcShowArgs",
+              "type": "object"
+            },
+            "op": {
+              "const": "proc.show",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "ProcShowRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "op": {
+              "const": "proc.list",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op"
+          ],
+          "title": "ProcListRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/Log"
+            },
+            "op": {
+              "const": "log",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "LogRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/Diff"
+            },
+            "op": {
+              "const": "diff",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "DiffRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/Remote"
+            },
+            "op": {
+              "const": "push",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "PushRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/Remote"
+            },
+            "op": {
+              "const": "pull",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "PullRequest",
+          "type": "object"
+        },
+        {
+          "description": "Read a file (or a symlink's target) of a workspace without mounting it.",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/FsRead"
+            },
+            "op": {
+              "const": "fs.read",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "FsReadRequest",
+          "type": "object"
+        },
+        {
+          "description": "List a directory of a workspace.",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/FsList"
+            },
+            "op": {
+              "const": "fs.list",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "FsListRequest",
+          "type": "object"
+        },
+        {
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/FsStat"
+            },
+            "op": {
+              "const": "fs.stat",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "FsStatRequest",
+          "type": "object"
+        },
+        {
+          "description": "Change files of a workspace's main and record the change as one changeset.",
+          "properties": {
+            "args": {
+              "$ref": "#/$defs/FsEdit"
+            },
+            "op": {
+              "const": "fs.edit",
+              "type": "string"
+            }
+          },
+          "required": [
+            "op",
+            "args"
+          ],
+          "title": "FsEditRequest",
+          "type": "object"
+        }
+      ]
+    },
+    "Reset": {
+      "description": "Bring a branch back to a changeset or snapshot (recorded as a new changeset): a running\nprocess's branch for its own snapshots, else the workspace's main.",
+      "properties": {
+        "target": {
+          "description": "Changeset or snapshot id.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "target"
+      ],
+      "type": "object"
+    },
+    "ResolutionAction": {
+      "oneOf": [
+        {
+          "const": "ours",
+          "description": "Keep the target's version.",
+          "type": "string"
+        },
+        {
+          "const": "theirs",
+          "description": "Take the source's version.",
+          "type": "string"
+        },
+        {
+          "const": "content",
+          "description": "Write the supplied content.",
+          "type": "string"
+        }
+      ]
+    },
+    "ResolutionSpec": {
+      "description": "Conflict resolution for one path.",
+      "properties": {
+        "action": {
+          "$ref": "#/$defs/ResolutionAction"
+        },
+        "content": {
+          "description": "Base64 file content for action \"content\" (the CLI reads `content_path`).",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "path": {
+          "$ref": "#/$defs/PathName"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "path",
+        "action"
+      ],
+      "type": "object"
+    },
+    "Response": {
+      "properties": {
+        "error": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ErrorBody"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "ok": {
+          "type": "boolean"
+        },
+        "result": true
+      },
+      "required": [
+        "ok"
+      ],
+      "type": "object"
+    },
+    "Revert": {
+      "description": "Undo one changeset, everything a session recorded, or everything between two states\n(`from`, `to`), on top of the current head.",
+      "properties": {
+        "changeset": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "from": {
+          "default": null,
+          "description": "Changeset or snapshot the range starts at (not undone); needs `to`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "resolutions": {
+          "default": [],
+          "items": {
+            "$ref": "#/$defs/ResolutionSpec"
+          },
+          "type": "array"
+        },
+        "session": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "to": {
+          "default": null,
+          "description": "Changeset or snapshot the range ends at (undone), of the same workspaces as `from`.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "type": "object"
+    },
+    "SessionCreate": {
+      "properties": {
+        "end_on_exit": {
+          "default": false,
+          "description": "End (merge) the session once the calling process (the one that connected) exits,\nas if its idle timeout had passed. Needs Linux 6.5 (SO_PEERPIDFD). SDK only: the\nCLI process exits right away.",
+          "type": "boolean"
+        },
+        "idle_timeout": {
+          "default": null,
+          "description": "End (merge) the session after this many seconds without changes.",
+          "format": "uint64",
+          "minimum": 0,
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "name": {
+          "default": null,
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "ws": {
+          "default": [],
+          "description": "Workspaces whose changes this session labels (repeatable).",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        }
+      },
+      "type": "object"
+    },
+    "SessionCreated": {
+      "description": "`session.create`.",
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "live": {
+          "items": {
+            "$ref": "#/$defs/LiveSpan"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "required": [
+        "id",
+        "live"
+      ],
+      "type": "object"
+    },
+    "SessionEnded": {
+      "description": "`session.merge` and `session.discard`.",
+      "properties": {
+        "conflict": {
+          "description": "`session.discard`: a workspace could not be brought back (see `live[].discard`).",
+          "type": "boolean"
+        },
+        "live": {
+          "items": {
+            "$ref": "#/$defs/LiveSpan"
+          },
+          "type": "array"
+        },
+        "session": {
+          "type": "string"
+        },
+        "state": {
+          "description": "merged or discarded.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "session",
+        "state",
+        "live",
+        "conflict"
+      ],
+      "type": "object"
+    },
+    "SessionInfo": {
+      "description": "An entry of `session.list`.",
+      "properties": {
+        "created_at": {
+          "description": "Unix time in ms.",
+          "format": "int64",
+          "type": "integer"
+        },
+        "id": {
+          "type": "string"
+        },
+        "live": {
+          "items": {
+            "$ref": "#/$defs/LiveSpan"
+          },
+          "type": "array"
+        },
+        "name": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "state": {
+          "description": "active, merged or discarded.",
+          "type": "string"
+        }
+      },
+      "required": [
+        "id",
+        "state",
+        "created_at",
+        "live"
+      ],
+      "type": "object"
+    },
+    "SnapInfo": {
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "merge_parent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "parent": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "present": {
+          "description": "False once pruned (only the diff summary against the parent is kept).",
+          "type": "boolean"
+        },
+        "snap": {
+          "type": "string"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "snap",
+        "ws",
+        "branch",
+        "present"
+      ],
+      "type": "object"
+    },
+    "SnapRef": {
+      "properties": {
+        "branch": {
+          "type": "string"
+        },
+        "snap": {
+          "type": "string"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "snap",
+        "branch"
+      ],
+      "type": "object"
+    },
+    "WsDetached": {
+      "description": "`ws.detach`.",
+      "properties": {
+        "head_snap": {
+          "type": "string"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws",
+        "head_snap"
+      ],
+      "type": "object"
+    },
+    "WsInfo": {
+      "description": "An entry of `ws.list`.",
+      "properties": {
+        "base": {
+          "type": "string"
+        },
+        "gid": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "head_snap": {
+          "type": "string"
+        },
+        "host_path": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "layers": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "live": {
+          "description": "False once detached.",
+          "type": "boolean"
+        },
+        "main_branch": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "pending": {
+          "description": "Changes not recorded yet.",
+          "type": "boolean"
+        },
+        "session": {
+          "description": "Active session labelling this workspace.",
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "uid": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "host_path",
+        "uid",
+        "gid",
+        "main_branch",
+        "head_snap",
+        "base",
+        "layers",
+        "live",
+        "pending"
+      ],
+      "type": "object"
+    },
+    "WsPrune": {
+      "properties": {
+        "dry_run": {
+          "default": false,
+          "description": "Only report what would be dropped.",
+          "type": "boolean"
+        },
+        "ws": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "ws"
+      ],
+      "type": "object"
+    },
+    "WsRegistered": {
+      "description": "`ws.register`.",
+      "properties": {
+        "base": {
+          "type": "string"
+        },
+        "changeset": {
+          "type": "string"
+        },
+        "gid": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        },
+        "head_snap": {
+          "type": "string"
+        },
+        "host_path": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "main_branch": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "stale_processes": {
+          "description": "Processes that were inside the directory when acfs took it over; they see it vanish.",
+          "items": {
+            "type": "string"
+          },
+          "type": "array"
+        },
+        "uid": {
+          "format": "uint32",
+          "minimum": 0,
+          "type": "integer"
+        }
+      },
+      "required": [
+        "id",
+        "name",
+        "host_path",
+        "uid",
+        "gid",
+        "base",
+        "main_branch",
+        "head_snap",
+        "changeset",
+        "stale_processes"
+      ],
+      "type": "object"
+    }
+  },
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "acfs-daemon socket protocol: one JSON request line and one JSON response line per connection\n(`proc.run`: a second line, `ProcExited`).",
+  "properties": {
+    "proc_exited": {
+      "$ref": "#/$defs/ProcExited"
+    },
+    "protocol": {
+      "const": 2
+    },
+    "request": {
+      "$ref": "#/$defs/Request"
+    },
+    "response": {
+      "$ref": "#/$defs/Response"
+    },
+    "results": {
+      "properties": {
+        "base.flatten": {
+          "$ref": "#/$defs/BaseChanged"
+        },
+        "base.promote": {
+          "$ref": "#/$defs/BaseChanged"
+        },
+        "changeset": {
+          "$ref": "#/$defs/LiveChangeset"
+        },
+        "diff": {
+          "items": {
+            "$ref": "#/$defs/DiffResult"
+          },
+          "type": "array"
+        },
+        "fs.edit": {
+          "$ref": "#/$defs/FsEdited"
+        },
+        "fs.list": {
+          "$ref": "#/$defs/FsListing"
+        },
+        "fs.read": {
+          "$ref": "#/$defs/FsFile"
+        },
+        "fs.stat": {
+          "$ref": "#/$defs/FsEntry"
+        },
+        "log": {
+          "items": {
+            "$ref": "#/$defs/ChangesetInfo"
+          },
+          "type": "array"
+        },
+        "ping": {
+          "$ref": "#/$defs/Pong"
+        },
+        "proc.changeset": {
+          "$ref": "#/$defs/ProcChangesetTaken"
+        },
+        "proc.kill": {
+          "$ref": "#/$defs/ProcKilled"
+        },
+        "proc.list": {
+          "items": {
+            "$ref": "#/$defs/ProcInfo"
+          },
+          "type": "array"
+        },
+        "proc.merge": {
+          "$ref": "#/$defs/ProcMerged"
+        },
+        "proc.run": {
+          "$ref": "#/$defs/ProcStarted"
+        },
+        "proc.show": {
+          "$ref": "#/$defs/ProcInfo"
+        },
+        "pull": {
+          "$ref": "#/$defs/Pulled"
+        },
+        "push": {
+          "$ref": "#/$defs/Pushed"
+        },
+        "reset": {
+          "$ref": "#/$defs/Applied"
+        },
+        "revert": {
+          "$ref": "#/$defs/Applied"
+        },
+        "session.create": {
+          "$ref": "#/$defs/SessionCreated"
+        },
+        "session.discard": {
+          "$ref": "#/$defs/SessionEnded"
+        },
+        "session.list": {
+          "items": {
+            "$ref": "#/$defs/SessionInfo"
+          },
+          "type": "array"
+        },
+        "session.merge": {
+          "$ref": "#/$defs/SessionEnded"
+        },
+        "ws.detach": {
+          "$ref": "#/$defs/WsDetached"
+        },
+        "ws.list": {
+          "items": {
+            "$ref": "#/$defs/WsInfo"
+          },
+          "type": "array"
+        },
+        "ws.prune": {
+          "$ref": "#/$defs/Pruned"
+        },
+        "ws.register": {
+          "$ref": "#/$defs/WsRegistered"
+        }
+      },
+      "required": [
+        "ping",
+        "ws.register",
+        "ws.list",
+        "ws.detach",
+        "ws.prune",
+        "changeset",
+        "reset",
+        "revert",
+        "base.promote",
+        "base.flatten",
+        "session.create",
+        "session.list",
+        "session.merge",
+        "session.discard",
+        "proc.run",
+        "proc.changeset",
+        "proc.merge",
+        "proc.kill",
+        "proc.show",
+        "proc.list",
+        "log",
+        "diff",
+        "push",
+        "pull",
+        "fs.read",
+        "fs.list",
+        "fs.stat",
+        "fs.edit"
+      ],
+      "type": "object"
+    }
+  },
+  "required": [
+    "protocol",
+    "request",
+    "response",
+    "proc_exited",
+    "results"
+  ],
+  "title": "AcfsProtocol",
+  "type": "object"
+}

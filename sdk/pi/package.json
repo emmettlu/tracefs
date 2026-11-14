@@ -1,0 +1,25 @@
+{
+  "name": "@dopamine-org/acfs-pi",
+  "version": "0.1.0",
+  "private": true,
+  "description": "pi extension: acfs checkpoints for every tool call of a process started with acfs run, merged into main when a prompt settles",
+  "type": "module",
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  },
+  "scripts": {
+    "check": "tsc",
+    "test": "node test.ts"
+  },
+  "peerDependencies": {
+    "@earendil-works/pi-coding-agent": "*"
+  },
+  "devDependencies": {
+    "@earendil-works/pi-ai": "1",
+    "@earendil-works/pi-coding-agent": "1",
+    "@types/node": "26",
+    "typescript": "7"
+  }
+}

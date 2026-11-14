@@ -1,0 +1,32 @@
+{
+  "name": "@dopamine-org/acfs",
+  "version": "0.2.0",
+  "description": "Client for the acfs-daemon socket protocol",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emmettlu/tracefs.git",
+    "directory": "sdk/typescript"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  },
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": ["dist"],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "build": "tsc",
+    "prepare": "tsc"
+  },
+  "devDependencies": {
+    "@types/node": "26",
+    "typescript": "7"
+  }
+}

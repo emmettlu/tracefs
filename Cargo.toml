@@ -1,0 +1,20 @@
+[workspace]
+resolver = "3"
+members = ["crates/*"]
+
+[workspace.package]
+edition = "2024"
+
+[workspace.dependencies]
+anyhow = "1"
+base64 = "0"
+clap = { version = "4", features = ["derive", "env"] }
+ignore = "0"
+libc = "0"
+rusqlite = { version = "0", features = ["bundled"] }
+rustix = { version = "1", features = ["event", "fs", "mount", "net", "process", "thread"] }
+schemars = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0"
+ulid = "3"
