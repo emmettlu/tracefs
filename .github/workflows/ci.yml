@@ -19,8 +19,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
         with:
           node-version: 24
       - name: git identity for merge-file
@@ -35,16 +35,28 @@ jobs:
         if: runner.os == 'Linux'
         working-directory: sdk/portable
         run: sudo env "PATH=$PATH" ACFS_LITE_TEST_DIR=/var/tmp node --test --test-name-pattern=btrfs "test/image.test.js"
+      - name: acfs-portable on a btrfs volume (Linux)
+        if: runner.os == 'Linux' && !cancelled()
+        working-directory: sdk/portable
+        run: |
+          truncate -s 4G "$RUNNER_TEMP/b.img" && mkfs.btrfs -q "$RUNNER_TEMP/b.img"
+          sudo mkdir -p /mnt/b && sudo mount -o loop "$RUNNER_TEMP/b.img" /mnt/b && sudo chown "$USER" /mnt/b
+          TMPDIR=/mnt/b node --test "test/*.test.js"
       - name: dsh-acfs
+        if: ${{ !cancelled() }}
         working-directory: sdk/dsh
         run: node --test "test/*.test.js"
       - name: acfs-pi install
+        id: piinstall
+        if: ${{ !cancelled() }}
         working-directory: sdk/pi
         run: npm install --no-audit --no-fund
       - name: acfs-pi typecheck
+        if: ${{ !cancelled() && steps.piinstall.outcome == 'success' }}
         working-directory: sdk/pi
         run: npx tsc -p .
       - name: acfs-pi on pi with a faux model
+        if: ${{ !cancelled() && steps.piinstall.outcome == 'success' }}
         working-directory: sdk/pi
         run: node test-portable.ts
 
@@ -57,7 +69,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt, clippy
@@ -69,7 +81,7 @@ jobs:
         if: runner.os == 'Linux'
         run: cargo clippy --all-targets -- -D warnings
       - name: test (workspace)
-        if: runner.os == 'Linux'
+        if: runner.os == 'Linux' && !cancelled()
         run: cargo test
       - name: test (acfs-core)
         if: runner.os != 'Linux'
@@ -80,7 +92,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - name: tools
@@ -89,18 +101,22 @@ jobs:
         run: cargo build --release
       - name: host check
         run: sudo bash tests/setup-host.sh
+      - name: copy where the agent uid can reach it
+        run: |
+          sudo rsync -a --exclude target --exclude .git ./ /opt/acfs-src/
+          sudo install -Dm755 -t /opt/acfs-src/target/release target/release/acfsd target/release/acfs
       - name: integration tests
-        run: sudo env "SRC=$PWD" "BIN=$PWD/target/release" bash tests/run.sh
+        run: sudo env SRC=/opt/acfs-src BIN=/opt/acfs-src/target/release bash /opt/acfs-src/tests/run.sh
       - name: results
         run: |
-          cat tests/out/summary
-          grep -h '^RESULT|.*|FAIL|' tests/out/*.out || true
-          ! grep -Eq '^SUMMARY\|[^|]*\|(pass=[0-9]+\|fail=[1-9]|aborted|skipped)|GUARD' tests/out/summary
+          cat /opt/acfs-src/tests/out/summary
+          grep -h '^RESULT|.*|FAIL|' /opt/acfs-src/tests/out/*.out || true
+          ! grep -Eq '^SUMMARY\|[^|]*\|(pass=[0-9]+\|fail=[1-9]|aborted|skipped)|GUARD' /opt/acfs-src/tests/out/summary
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: integration-out
-          path: tests/out
+          path: /opt/acfs-src/tests/out
           if-no-files-found: ignore
 
   kernel:
@@ -108,7 +124,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: tools
         run: |
           sudo apt-get update -q
