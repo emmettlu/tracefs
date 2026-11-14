@@ -136,3 +136,28 @@ jobs:
           sudo udevadm trigger --name-match=kvm
       - name: build and run the selftests
         run: BUSYBOX=$(command -v busybox) TIMEOUT=1500 bash kernel/test.sh "$RUNNER_TEMP/k"
+
+  dsh-e2e:
+    name: dsh-acfs in a real DeepSeek Harness (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    env:
+      DSH_REF: 39163dd30f703a79079e2d2446545cff3c453738
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+      - name: deepseek-harness
+        run: |
+          git init -q "$RUNNER_TEMP/dsh" && cd "$RUNNER_TEMP/dsh"
+          git fetch -q --depth 1 https://github.com/deepseek-ai/deepseek-harness.git "$DSH_REF" && git checkout -q FETCH_HEAD
+          corepack enable
+          pnpm install --frozen-lockfile
+          pnpm run build
+      - name: e2e
+        run: DSH_SOURCE="$RUNNER_TEMP/dsh" bash sdk/dsh/test/e2e.sh

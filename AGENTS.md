@@ -61,6 +61,7 @@ Linux >= 6.8 (`lowerdir+`), 带 btrfs, overlayfs 和 loop; systemd (`systemd-run
 | --- | --- | --- |
 | acfs-portable | `cd sdk/portable && node --test "test/*.test.js"`: 仓库操作 (diff、同毫秒的改动、可执行位、软链、二进制、undo / revert / reset 和冲突、分支合并、文本合并、锁、prune)、后端选择、假 acfsd socket 上的协议、`acfs-lite` 命令、镜像 (macOS APFS 镜像并量快照占的空间, Linux btrfs / btrfs 镜像要 root 或 udisksctl 加 `ACFS_LITE_TEST_DIR` 指到非 btrfs 目录, Windows VHDX 要管理员) | Linux / macOS / Windows |
 | dsh-acfs | `cd sdk/dsh && node --test "test/*.test.js"` (照 dsh 的事件签名写的假 ctx, 真 acfs-lite 仓库) | 三个都跑 |
+| dsh-acfs 端到端 | `DSH_SOURCE=<构建好的 deepseek-harness> bash sdk/dsh/test/e2e.sh`: 真 dsh 的 headless profile 加本插件, dsh 自带的 mock 模型 (`llm-mock-server`) 在 acfs-lite 分支里调 bash, 查 changeset (作者、tool call id) 和回合结束时合进 main. CI 钉住 deepseek-harness 的一个提交 (`DSH_REF`) | Linux / macOS |
 | pi 扩展 | `cd sdk/pi && npm install && npx tsc -p . && node test-portable.ts` (真 pi 运行时, faux 模型, acfs-lite 分支); acfsd 下是 `node test.ts` (要守护进程, 自己 `acfs run`) | 三个都跑; acfsd 那份只在 Linux |
 | Rust | `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`; macOS / Windows 只 `cargo test -p acfs-core` | 三个都跑 |
 | acfsd 集成测试 | 下面的 `tests/run.sh` | Linux (root) |
