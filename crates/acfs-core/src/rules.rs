@@ -1,5 +1,4 @@
-use std::ffi::OsStr;
-use std::os::unix::ffi::OsStrExt;
+use std::borrow::Cow;
 use std::path::Path;
 
 use ignore::gitignore::{Gitignore, GitignoreBuilder};
@@ -34,8 +33,18 @@ pub struct Rules {
     merge: Vec<(Gitignore, Option<Strategy>)>,
 }
 
-fn path(p: &[u8]) -> &Path {
-    Path::new(OsStr::from_bytes(p))
+#[cfg(unix)]
+fn path(p: &[u8]) -> Cow<'_, Path> {
+    use std::os::unix::ffi::OsStrExt;
+    Cow::Borrowed(Path::new(std::ffi::OsStr::from_bytes(p)))
+}
+
+#[cfg(not(unix))]
+fn path(p: &[u8]) -> Cow<'_, Path> {
+    match String::from_utf8_lossy(p) {
+        Cow::Borrowed(s) => Cow::Borrowed(Path::new(s)),
+        Cow::Owned(s) => Cow::Owned(s.into()),
+    }
 }
 
 impl Rules {
