@@ -165,3 +165,12 @@ jobs:
           pnpm run build
       - name: e2e
         run: DSH_SOURCE="$RUNNER_TEMP/dsh" bash sdk/dsh/test/e2e.sh
+      - name: market index is valid and installs
+        if: runner.os == 'Linux'
+        run: |
+          cd "$RUNNER_TEMP/dsh"
+          node --import tsx "$GITHUB_WORKSPACE/market/validate.ts" "$PWD" "$GITHUB_WORKSPACE/market/index.json" | tee "$RUNNER_TEMP/specs"
+          spec=$(head -1 "$RUNNER_TEMP/specs" | sed 's/^[^:]*: //')
+          DSH_HOME="$RUNNER_TEMP/home" pnpm dsh plugin --profile market add "$spec"
+          DSH_HOME="$RUNNER_TEMP/home" pnpm dsh --profile market --dump-config | grep -q '^# == dsh-acfs'
+          DSH_HOME="$RUNNER_TEMP/home" node -e "import('$RUNNER_TEMP/home/profiles/market/node_modules/dsh-acfs/index.js').then(m => { if (m.name !== 'acfs') process.exit(1) })"

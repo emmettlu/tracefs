@@ -131,6 +131,14 @@ agent 不会被关进自己的分支 (在哪棵树里跑就改哪棵); 操作是
   `sdk/portable` 的副本: 改了 `sdk/portable` 要跑 `sdk/sync-portable.sh` (同时更新 `sdk/dsh/lib/portable`) (测试比对两份, 不一致就失败). 装法: `codex plugin marketplace add emmettlu/tracefs`,
   再装 `acfs`; 插件的 hooks 要在 Codex 里审核信任后才跑.
 
+### 上架 DSH
+
+DSH 没有官方的中央市场: Discover 读用户加的索引 URL (format 1, 见 deepseek-harness 的 `dsh-plugin-market-index`). 本仓库自己发一个:
+`market/index.json`, 地址 `https://raw.githubusercontent.com/emmettlu/tracefs/main/market/index.json`. 版本的安装源是 Git (`github.com/emmettlu/tracefs`,
+钉住提交, `path: sdk/dsh`), 不用 npm; 图标内联成 data URI (raw.githubusercontent 给 SVG 的类型是 text/plain, 页面显示不了). 发新版: 改
+`sdk/dsh/package.json` 的 `version`, 提交推送, 再 `node market/gen.mjs <那个提交>` (旧版本保留在 `versions`, `latest` 指新版) 并提交.
+CI 的 dsh-e2e 用 dsh 的解析器校验索引 (`market/validate.ts`), 按它给的安装串装进一个 profile 并加载. 仓库带 GitHub topic `dsh-plugin`.
+
 ## 内核态
 
 `kernel/` 是一个带分支的写时复制内核文件系统 (`mount -t acfs`), 用法、ioctl 和盘上格式见 `kernel/Documentation/userspace-api/ac/acfs.rst`.
