@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { test } from "node:test";
 
-import { Store } from "../../portable/index.js";
+import { Store } from "../lib/portable/index.js";
 import * as plugin from "../index.js";
 
 class FakeCtx {
@@ -87,6 +87,19 @@ function setup(t) {
 
 const put = (dir, f, text) => fs.writeFileSync(path.join(dir, f), text);
 const get = (dir, f) => (fs.existsSync(path.join(dir, f)) ? fs.readFileSync(path.join(dir, f), "utf8") : undefined);
+
+test("lib/portable is the same as sdk/portable (run sdk/sync-portable.sh)", () => {
+  const src = new URL("../../portable/", import.meta.url);
+  const dst = new URL("../lib/portable/", import.meta.url);
+  const files = ["index.js", "index.d.ts", "package.json", ...fs.readdirSync(new URL("src/", src)).map((f) => `src/${f}`)];
+  for (const f of files) assert.equal(fs.readFileSync(new URL(f, dst), "utf8"), fs.readFileSync(new URL(f, src), "utf8"), f);
+  assert.deepEqual(fs.readdirSync(new URL("src/", dst)).sort(), fs.readdirSync(new URL("src/", src)).sort());
+});
+
+test("the package is self-contained: it imports nothing outside its directory", () => {
+  const text = fs.readFileSync(new URL("../index.js", import.meta.url), "utf8");
+  assert.doesNotMatch(text, /from "\.\.\//);
+});
 
 test("the bundle manifest inserts the plugin by package name", () => {
   const pkg = JSON.parse(fs.readFileSync(new URL("../package.json", import.meta.url)));

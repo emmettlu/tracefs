@@ -1,4 +1,4 @@
-import { open } from "../portable/index.js";
+import { open } from "./lib/portable/index.js";
 
 export const name = "acfs";
 export const inject = ["tools", "workingDirectory"];

@@ -68,7 +68,7 @@ test("the plugin manifest, hooks and marketplace entry fit together", () => {
   assert.match(skillMd, /^---\nname: acfs\ndescription: .+\n---\n/);
 });
 
-test("lib/portable is the same as sdk/portable (run sdk/codex/sync.sh)", () => {
+test("lib/portable is the same as sdk/portable (run sdk/sync-portable.sh)", () => {
   const src = path.join(REPO, "sdk", "portable");
   const dst = path.join(ROOT, "lib", "portable");
   const files = ["index.js", "index.d.ts", "package.json", ...fs.readdirSync(path.join(src, "src")).map((f) => `src/${f}`)];

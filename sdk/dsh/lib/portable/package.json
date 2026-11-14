@@ -1,0 +1,17 @@
+{
+  "name": "acfs-portable",
+  "version": "0.1.0",
+  "description": "acfs backends for agent plugins: acfsd on Linux, or a copy-on-write store in a mounted image (macOS APFS, Linux btrfs, Windows NTFS)",
+  "type": "module",
+  "license": "MIT",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "exports": {
+    ".": { "types": "./index.d.ts", "default": "./index.js" },
+    "./package.json": "./package.json"
+  },
+  "bin": { "acfs-lite": "src/cli.js" },
+  "files": ["index.js", "index.d.ts", "src"],
+  "engines": { "node": ">=22" },
+  "scripts": { "test": "node --test \"test/*.test.js\"" }
+}

@@ -10,7 +10,11 @@
     "./package.json": "./package.json",
     "./cordis.patch.yml": "./cordis.patch.yml"
   },
-  "files": ["index.js", "cordis.patch.yml"],
+  "files": [
+    "index.js",
+    "cordis.patch.yml",
+    "lib"
+  ],
   "engines": {
     "dsh": ">=0.2.1-alpha.4 <0.3.0"
   },
@@ -19,10 +23,28 @@
   },
   "dsh": {
     "bundle": {
-      "patch": ["./cordis.patch.yml"]
+      "patch": [
+        "./cordis.patch.yml"
+      ]
     }
   },
   "scripts": {
     "test": "node --test \"test/*.test.js\""
-  }
+  },
+  "homepage": "https://github.com/emmettlu/tracefs",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/emmettlu/tracefs.git",
+    "directory": "sdk/dsh"
+  },
+  "author": "emmettlu",
+  "keywords": [
+    "dsh",
+    "dsh-plugin",
+    "acfs",
+    "versioning",
+    "undo",
+    "checkpoint",
+    "copy-on-write"
+  ]
 }

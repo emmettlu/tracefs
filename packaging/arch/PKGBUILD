@@ -85,4 +85,6 @@ EOF
   install -d "${pkgdir}/usr/bin"
   ln -s ../share/acfs/sdk/portable/src/cli.js "${pkgdir}/usr/bin/acfs-lite"
   install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/dsh" sdk/dsh/index.js sdk/dsh/package.json sdk/dsh/cordis.patch.yml
+  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/dsh/lib/portable" sdk/dsh/lib/portable/index.js sdk/dsh/lib/portable/index.d.ts sdk/dsh/lib/portable/package.json
+  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/dsh/lib/portable/src" sdk/dsh/lib/portable/src/*.js
 }

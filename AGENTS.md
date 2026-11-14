@@ -1,6 +1,6 @@
 # acfs 协作约定
 
-不需要 README.md, full agentic. 本文件是仓库里唯一的说明: 协作约定在前, 设计与现状在后面的「设计」.
+full agentic. `README.md` 只是给外人看的介绍 (数字和说法都取自本文件, 改了这里的设计或性能数字要同步它); 协作约定、设计与现状以本文件为准: 协作约定在前, 设计与现状在后面的「设计」.
 
 acfs (AgentComputerFS): agent 版本化文件系统. 本仓库 (tracefs) 有两部分: 根目录是用户态 (`acfsd` 守护进程、`acfs` CLI、SDK),
 `kernel/` 是内核态 (内核文件系统 `acfs`, 见「内核态」). 开源: 用户态 MIT (`LICENSE`), `kernel/` GPL-2.0 (`kernel/COPYING`, 文件里有 SPDX 行).
@@ -128,7 +128,7 @@ agent 不会被关进自己的分支 (在哪棵树里跑就改哪棵); 操作是
   (作者 `codex`, `tool_call` 是 `tool_use_id`, 消息是命令首行或 patch 里的文件); `Stop` 时 `settle` (`ACFS_CODEX_MERGE=0` 关), 冲突回
   `systemMessage`. 会话状态 (`last` / `before` / 历史) 在 `$PLUGIN_DATA/sessions/<session_id>.json`, 每个 hook 是单独的进程. skill `acfs`
   (`skills/acfs/SKILL.md` + `scripts/acfs.mjs`): status / log / diff / undo / merge. Codex 装插件是复制整个目录, 所以 `lib/portable` 是
-  `sdk/portable` 的副本: 改了 `sdk/portable` 要跑 `sdk/codex/sync.sh` (测试比对两份, 不一致就失败). 装法: `codex plugin marketplace add emmettlu/tracefs`,
+  `sdk/portable` 的副本: 改了 `sdk/portable` 要跑 `sdk/sync-portable.sh` (同时更新 `sdk/dsh/lib/portable`) (测试比对两份, 不一致就失败). 装法: `codex plugin marketplace add emmettlu/tracefs`,
   再装 `acfs`; 插件的 hooks 要在 Codex 里审核信任后才跑.
 
 ## 内核态
