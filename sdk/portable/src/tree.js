@@ -4,6 +4,7 @@ import path from "node:path";
 
 const WIN = process.platform === "win32";
 const CHUNK = 1 << 20;
+const SLACK_MS = 2000;
 
 export function scan(root) {
   const out = new Map();
@@ -69,7 +70,7 @@ export function same(a, b, absA, absB, racy = 0) {
   if (a.type === "link") return a.target === b.target;
   if (a.type !== "file") return true;
   if (a.size !== b.size || a.mode !== b.mode) return false;
-  if (a.mtime === b.mtime && a.mtime < racy) return true;
+  if (a.mtime === b.mtime && a.mtime < racy - SLACK_MS) return true;
   return sameContent(absA, absB);
 }
 

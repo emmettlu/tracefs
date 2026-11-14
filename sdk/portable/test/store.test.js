@@ -48,6 +48,21 @@ test("same-size edits within one millisecond are still seen", (t) => {
   }
 });
 
+test("an edit is seen when the file clock lags the wall clock", (t) => {
+  const s = fresh(t);
+  const main = s.register("app");
+  const f = path.join(main, "f");
+  fs.writeFileSync(f, "v0");
+  const t0 = new Date(Date.now() - 500);
+  fs.utimesSync(f, t0, t0);
+  const a = s.checkpoint("app", "main");
+  fs.writeFileSync(f, "v1");
+  fs.utimesSync(f, t0, t0);
+  const b = s.checkpoint("app", "main");
+  assert.ok(b, "the edit was missed");
+  assert.deepEqual(s.diff(a, b).changes, [{ kind: "modify", path: "f" }]);
+});
+
 test("diff lists adds, deletes and modifications", (t) => {
   const s = fresh(t);
   const main = s.register("app", project(t));

@@ -162,8 +162,10 @@ function windows(h, size) {
   } else {
     diskpart([`select vdisk file="${image}"`, "attach vdisk"]);
     if (!fs.existsSync(path.join(mount, ".acfs-lite-volume"))) {
-      fs.rmSync(mount, { recursive: false, force: true });
-      fs.mkdirSync(mount, { recursive: true });
+      try {
+        fs.rmdirSync(mount);
+      } catch {}
+      mountDir(mount);
       diskpart([`select vdisk file="${image}"`, "select partition 1", `assign mount="${mount}"`]);
     }
   }
