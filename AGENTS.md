@@ -18,7 +18,11 @@ acfs (AgentComputerFS): agent 版本化文件系统. 本仓库 (tracefs) 有两�
 | `crates/acfs-daemon` | 守护进程, 二进制 `acfsd` |
 | `crates/acfs-cli` | `acfs` 命令 |
 | `schema/` | socket 协议的 JSON schema, 由 `acfs-core` 生成 |
-| `sdk/` | TypeScript (`@dopamine-org/acfs`) 和 Python (`acfs-sdk`) 客户端, pi 扩展 |
+| `sdk/typescript`, `sdk/python` | TypeScript (`@dopamine-org/acfs`) 和 Python (`acfs-sdk`) 客户端 |
+| `sdk/portable` | `acfs-portable`: 插件共用的后端 (acfsd 或 acfs-lite) 和 `acfs-lite` 命令, 纯 JS, 见「插件」 |
+| `sdk/pi` | pi-coding-agent 扩展, 见「插件」 |
+| `sdk/dsh` | DeepSeek Harness (dsh) 插件包 `dsh-acfs`, 见「插件」 |
+| `.github/workflows/ci.yml` | GitHub Actions: Linux / macOS / Windows 上的插件和 Rust, Linux 上的 acfsd 集成测试和内核模块 |
 | `tests/` | 集成测试 (root, btrfs, systemd), `stress.py` 随机文件操作, `bench.sh` 基准 |
 | `tests/kernel/` | acfs 依赖的内核/btrfs/overlayfs 行为探针 (`probe.sh`, 「设计」里的「验证 x.y」) 和内核层性能基准 (`t07_perf.sh`); `ovl.c` 是它们用的挂载小工具 |
 | `vm/` | macOS 上开发用的 Lima VM (`agentos.yaml`, `setup-guest.sh`); `build-alarm-image.sh` 做 Lima (vz) 能起的 Arch Linux ARM 镜像 `arch-aarch64.qcow2` (agentos, ackernel 的 VM 也用它) |
@@ -51,6 +55,17 @@ Linux >= 6.8 (`lowerdir+`), 带 btrfs, overlayfs 和 loop; systemd (`systemd-run
 
 ## 测试
 
+各平台的测试都在 CI (`.github/workflows/ci.yml`) 里跑, 本地同样的命令 (Node >= 22; dsh 本身要 24.9):
+
+| 部分 | 命令 | 平台 |
+| --- | --- | --- |
+| acfs-portable | `cd sdk/portable && node --test "test/*.test.js"`: 仓库操作 (diff、同毫秒的改动、可执行位、软链、二进制、undo / revert / reset 和冲突、分支合并、文本合并、锁、prune)、后端选择、假 acfsd socket 上的协议、`acfs-lite` 命令、镜像 (macOS APFS 镜像并量快照占的空间, Linux btrfs / btrfs 镜像要 root 或 udisksctl 加 `ACFS_LITE_TEST_DIR` 指到非 btrfs 目录, Windows VHDX 要管理员) | Linux / macOS / Windows |
+| dsh-acfs | `cd sdk/dsh && node --test "test/*.test.js"` (照 dsh 的事件签名写的假 ctx, 真 acfs-lite 仓库) | 三个都跑 |
+| pi 扩展 | `cd sdk/pi && npm install && npx tsc -p . && node test-portable.ts` (真 pi 运行时, faux 模型, acfs-lite 分支); acfsd 下是 `node test.ts` (要守护进程, 自己 `acfs run`) | 三个都跑; acfsd 那份只在 Linux |
+| Rust | `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings`, `cargo test`; macOS / Windows 只 `cargo test -p acfs-core` | 三个都跑 |
+| acfsd 集成测试 | 下面的 `tests/run.sh` | Linux (root) |
+| 内核模块 | `bash kernel/test.sh [工作目录]`: 下 `KVER` (默认 7.3.4) 的源码, 放进 acfs, `x86_64_defconfig` + `kvm_guest.config` + selftests 的 `config`, 编 bzImage 和 selftests, `vm.sh` 在 QEMU/KVM 里跑 | Linux x86_64 + KVM |
+
 - 单元测试 (`cargo test`, 无 root): 合并决议 (含重命名, 规则), 合并基点, 规则文件, send 流解析, 路径, schema 是否最新, home 查找.
   diff 翻译只有集成测试覆盖.
 - 集成测试 `tests/t01..t15` (bash) 需要 root, btrfs, systemd: `tests/setup-host.sh` 检查要用的工具, 然后
@@ -65,6 +80,44 @@ Linux >= 6.8 (`lowerdir+`), 带 btrfs, overlayfs 和 loop; systemd (`systemd-run
   - 数据放磁盘 (`/var/tmp/afst`), 不放 tmpfs `/tmp`; 不碰 `/var/lib`.
   - 只用 `run.sh` 跑: 每个测试在限内存的 scope 里, `guard.sh` 在内存, tmpfs, 磁盘或内存压力越线时杀掉并清理.
   - 同一台机器同一时间只跑一个 `run.sh`: unit 名和 `/var/tmp/afst` 全局共用, 换源码目录也不隔离. 残留用 `tests/reap.sh` 清.
+
+## 插件
+
+pi 和 dsh 插件只用用户态. 它们经 `sdk/portable` 的 `open({cwd})` 拿一个后端 (`Backend`: `checkpoint` / `diff` / `undo` / `revert` / `reset` /
+`log` / `settle` / `status`), 两种实现接口相同:
+
+| 后端 | 什么时候 | 怎么存 |
+| --- | --- | --- |
+| `acfsd` (`DaemonBackend`) | Linux, 进程在 `acfs run` 里 (有 `ACFS_PROC`) 且 socket 在 | 守护进程: btrfs 上直接用子卷; 状态目录不在 btrfs 上时它自己建 `<state>.img` loop 挂成 btrfs |
+| `portable` (`PortableBackend`, acfs-lite) | 其余情况, cwd 在 acfs-lite 仓库的某棵树里 | 见下表 |
+
+acfs-lite 不用 VM, 也不要 root (Windows 建 / 挂 VHDX 要管理员). 仓库在 `ACFS_LITE_HOME` (默认 `~/.acfs-lite`, Windows `%LOCALAPPDATA%\acfs-lite`), `acfs-lite init` 按平台建:
+
+| 平台 | `kind` | 仓库 | 快照 |
+| --- | --- | --- | --- |
+| macOS | `apfs-image` | `acfs.sparseimage` (APFS 稀疏镜像, `hdiutil attach -nobrowse -owners on`) 挂在 `mnt/` | `/bin/cp -c -R -p` (clonefile, 不占空间; Node 的 `COPYFILE_FICLONE` 在 macOS 上不克隆) |
+| Linux, `ACFS_LITE_HOME` 在 btrfs 上 | `btrfs` | `store/` 目录 | `copyFile` + `FICLONE` (reflink) |
+| Linux, 不在 btrfs 上 | `btrfs-image` | `acfs.img` (`mkfs.btrfs --rootdir`, 卷根归当前用户): root 用 `mount -o loop`, 否则 `udisksctl loop-setup` + `mount` | reflink |
+| Windows | `ntfs-image` | `acfs.vhdx` (diskpart 建 NTFS 分区, 挂在 `mnt\` 文件夹) | 整份复制 (NTFS 没有块克隆) |
+| 都不行 / `ACFS_LITE_PLAIN=1` | `dir` | `store/` 目录, `warning` 写原因 | 文件系统支持 reflink 时克隆, 否则复制 |
+
+`ACFS_LITE_ROOT=<目录>` 直接用那个目录当仓库 (测试用). 仓库根是 `acfs-lite.json` (工作区、分支、changeset 表), `trees/<ws>/<树>/` 是活的树
+(`main` 和各分支), `snaps/<id>/` 是 changeset 的快照; 跨进程用 `.lock/` 目录锁 (持有者死了或超过 2 分钟就收回). 工作区要放进仓库:
+`acfs-lite register <ws> <dir>` 复制进去并打印路径, agent 在那棵树 (或 `acfs-lite branch <ws> <名>` 的写时复制分支) 里跑.
+比较: 类型、大小、可执行位、mtime (毫秒); mtime 不早于旧快照拍摄时刻的文件逐字节比 (同一毫秒里改两次也看得见). 合并是三方的: 只一边改了取那边,
+两边都改的文本文件交给 `git merge-file`, 合不了的报冲突 (两棵树都不动), `--prefer ours|theirs` 按一边定; 合并后分支和 main 相同, 基点更新.
+`undo` 只撤那个 changeset 碰过的路径, 这些路径之后又变了 (或撤销会删掉之后新加的文件) 就是冲突, 什么都不改. 局限: 没有 mount namespace,
+agent 不会被关进自己的分支 (在哪棵树里跑就改哪棵); 操作是同步的, 大树的快照会阻塞插件所在进程.
+
+- **pi** (`sdk/pi/index.ts`, `pi -e sdk/pi/index.ts`): 一次 assistant 回复里写文件的工具调用 (除 `read` / `grep` / `find` / `ls`) 记成一个
+  changeset (第一次写之前先记 "before"), 写进会话的 `acfs-checkpoint` 条目; prompt 结束 (`agent_settled`) 时 `settle`: acfsd 是 `proc.merge`,
+  acfs-lite 在分支上就合进 main (main 上什么都不做); `/tree`、`/fork` 把文件带回那个点 (`ACFS_PI_RESTORE=ask|always|never`); `/acfs status|log|diff|undo|merge`.
+  不在 acfsd 也不在 acfs-lite 树里时只有 `/acfs`, 说明怎么开.
+- **dsh** (`sdk/dsh`, `dsh plugin --profile <名> add ./sdk/dsh`): cordis 插件 `acfs` (inject `tools`, `workingDirectory`). 工作区是会话的
+  `workingDirectory`. `tools/pre-execute` 在一步里第一个写文件的工具 (`WRITE_TOOLS`, 配置 `writeTools`) 之前记 "before", `tools/result` 收集,
+  `agent/pre-step` (下一步开始) 把上一步的调用记成一个 changeset, `turn/end` 记完并 `settle` (配置 `merge: false` 关掉), 冲突只 warn.
+  给模型一个工具 `acfs` (`action`: status / log / diff / undo / merge). 同一会话的操作排成一队; 并行的工具调用会落进同一个 changeset.
+  配置还有 `author` (默认 `dsh`).
 
 ## 内核态
 
@@ -90,7 +143,7 @@ Linux >= 6.8 (`lowerdir+`), 带 btrfs, overlayfs 和 loop; systemd (`systemd-run
 
 ## 代码
 
-Rust 和 TypeScript 代码不写注释 (`//`, `/* */`, `///`, `//!`, JSDoc 都不写), 要说明的写进本文件. 例外: 版权和许可证行,
+Rust、TypeScript 和 JavaScript 代码不写注释 (`//`, `/* */`, `///`, `//!`, JSDoc 都不写), 要说明的写进本文件. 例外: 版权和许可证行,
 工具要读的指令 (`/// <reference>`, `@ts-expect-error` 这类).
 clap 的帮助和 schemars 的描述写成属性 (`#[command(about = ...)]`, `#[arg(help = ...)]`, `#[schemars(description = ...)]`),
 不写成文档注释; 改了 schemars 的描述要 `UPDATE_SCHEMA=1 cargo test -p acfs-core schema` 并重新生成 SDK (`sdk/gen.sh`).

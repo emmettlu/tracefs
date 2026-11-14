@@ -19,6 +19,7 @@ url='https://github.com/emmettlu/tracefs'
 license=('MIT')
 # kernel >= 6.8 with btrfs, overlayfs and loop; the state dir falls back to a loop btrfs image off btrfs
 depends=('glibc' 'gcc-libs' 'systemd' 'btrfs-progs' 'git' 'coreutils' 'diffutils')
+optdepends=('nodejs: acfs-lite and the pi / dsh plugins' 'udisks2: acfs-lite btrfs image without root')
 makedepends=('rust' 'git')
 options=('!lto' '!debug')
 source=()
@@ -78,4 +79,10 @@ EOF
   # as sources: pi loads TypeScript itself (`pi -e /usr/share/acfs/sdk/pi/index.ts`)
   install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/pi" sdk/pi/index.ts sdk/pi/package.json
   install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/typescript/src" sdk/typescript/src/index.ts sdk/typescript/src/protocol.ts
+  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/portable" sdk/portable/index.js sdk/portable/index.d.ts sdk/portable/package.json
+  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/portable/src" sdk/portable/src/*.js
+  chmod 755 "${pkgdir}/usr/share/acfs/sdk/portable/src/cli.js"
+  install -d "${pkgdir}/usr/bin"
+  ln -s ../share/acfs/sdk/portable/src/cli.js "${pkgdir}/usr/bin/acfs-lite"
+  install -Dm644 -t "${pkgdir}/usr/share/acfs/sdk/dsh" sdk/dsh/index.js sdk/dsh/package.json sdk/dsh/cordis.patch.yml
 }
