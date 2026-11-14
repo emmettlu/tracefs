@@ -1,6 +1,6 @@
 # tracefs 协作约定
 
-full agentic. `README.md` 只是给外人看的介绍 (数字和说法都取自本文件, 改了这里的设计或性能数字要同步它); 协作约定、设计与现状以本文件为准: 协作约定在前, 设计与现状在后面的「设计」.
+full agentic. `README.md` (英文) 和 `README.zh-CN.md` (中文) 只是给外人看的介绍, 两份内容对应、顶上互相跳转 (数字和说法都取自本文件, 改了这里的设计或性能数字要同步两份); 协作约定、设计与现状以本文件为准: 协作约定在前, 设计与现状在后面的「设计」.
 
 tracefs (AgentComputerFS): agent 版本化文件系统. 本仓库 (tracefs) 有两部分: 根目录是用户态 (`tracefsd` 守护进程、`tracefs` CLI、SDK),
 `kernel/` 是内核态 (内核文件系统 `acfs`, 见「内核态」). 开源: 用户态 MIT (`LICENSE`), `kernel/` GPL-2.0 (`kernel/COPYING`, 文件里有 SPDX 行).
